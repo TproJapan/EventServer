@@ -44,7 +44,7 @@ class ConnectClient {
 	public: 
 		void operator()(){
 			//clientSockは書き換える可能性あるからmutexガード
-			std::lock_guard<std::mutex> lk(clientSockMutex_);
+			//std::lock_guard<std::mutex> lk(clientSockMutex_);
 
         	printf("client(%d)クライアントとの通信を開始します\n", _dstSocket);
         	size_t stSize;
@@ -59,6 +59,7 @@ class ConnectClient {
           		printf("recv error.\n");
           		printf("クライアント(%d)との接続が切れました\n", _dstSocket);
           		close(_dstSocket);
+				std::lock_guard<std::mutex> lk(clientSockMutex_);
           		_clientSock[_nSockNo] = -1;
           		return;
         	}
@@ -80,6 +81,7 @@ class ConnectClient {
           		printf("send error.\n");
           		printf("クライアントとの接続が切れました\n");
           		close(_dstSocket);
+				std::lock_guard<std::mutex> lk(clientSockMutex_);
           		_clientSock[_nSockNo] = -1;
           		return;
         	}
