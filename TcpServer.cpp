@@ -32,60 +32,62 @@ std::mutex clientSockMutex_;
 //引数あり、クラスでの関数オブジェクト
 ///////////////////////////////////////////////////////////////////////////////
 class ConnectClient {
-	int _nSockNo, _dstSocket;
-	int* _clientSock;
+	int  _dstSocket;
+	//int* _clientSock;
 	public:
-		ConnectClient(int nSockNo, int dstSocket, int* clientSock){
-			_nSockNo = nSockNo;
+		ConnectClient(int dstSocket){
+			//_nSockNo = nSockNo;
 			_dstSocket = dstSocket;
-			_clientSock = clientSock;
+			//_clientSock = clientSock;
 		};
 		~ConnectClient(){};
 	public: 
 		void operator()(){
-			//clientSockは書き換える可能性あるからmutexガード
-			//std::lock_guard<std::mutex> lk(clientSockMutex_);
+			while(true){
+				//clientSockは書き換える可能性あるからmutexガード
+				//std::lock_guard<std::mutex> lk(clientSockMutex_);
 
-        	printf("client(%d)クライアントとの通信を開始します\n", _dstSocket);
-        	size_t stSize;
-        	char buf[1024];
-			
-        	// クライアントから受信
-        	stSize = recv(_dstSocket,
-            	          buf,
-                	      sizeof(buf),
-                    	  0);
-        	if ( stSize <= 0 ) {
-          		printf("recv error.\n");
-          		printf("クライアント(%d)との接続が切れました\n", _dstSocket);
-          		close(_dstSocket);
-				std::lock_guard<std::mutex> lk(clientSockMutex_);
-          		_clientSock[_nSockNo] = -1;
-          		return;
-        	}
-			
-        	printf("変換前:[%s] ==> ", buf);
-			for (int i=0; i< stSize; i++){ // bufの中の小文字を大文字に変換
-				if ( isalpha(buf[i])) {
-				 buf[i] = toupper(buf[i]);
+				printf("client(%d)クライアントとの通信を開始します\n", _dstSocket);
+				size_t stSize;
+				char buf[1024];
+				
+				// クライアントから受信
+				stSize = recv(_dstSocket,
+							buf,
+							sizeof(buf),
+							0);
+				if ( stSize <= 0 ) {
+					printf("recv error.\n");
+					printf("クライアント(%d)との接続が切れました\n", _dstSocket);
+					close(_dstSocket);
+					std::lock_guard<std::mutex> lk(clientSockMutex_);
+					//_clientSock[_nSockNo] = -1;
+					return;
 				}
+				
+				printf("変換前:[%s] ==> ", buf);
+				for (int i=0; i< stSize; i++){ // bufの中の小文字を大文字に変換
+					if ( isalpha(buf[i])) {
+					buf[i] = toupper(buf[i]);
+					}
+				}
+				
+				// クライアントに返信
+				stSize = send(_dstSocket,
+							buf,
+							strlen(buf)+1,
+							0);
+				
+				if ( stSize != strlen(buf)+1) {
+					printf("send error.\n");
+					printf("クライアントとの接続が切れました\n");
+					close(_dstSocket);
+					std::lock_guard<std::mutex> lk(clientSockMutex_);
+					//_clientSock[_nSockNo] = -1;
+					return;
+				}
+				printf( "変換後:[%s] \n" ,buf);
 			}
-			
-			// クライアントに返信
-	        stSize = send(_dstSocket,
-    	                  buf,
-        	              strlen(buf)+1,
-            	          0);
-			
-        	if ( stSize != strlen(buf)+1) {
-          		printf("send error.\n");
-          		printf("クライアントとの接続が切れました\n");
-          		close(_dstSocket);
-				std::lock_guard<std::mutex> lk(clientSockMutex_);
-          		_clientSock[_nSockNo] = -1;
-          		return;
-        	}
-			printf( "変換後:[%s] \n" ,buf);
 		}
 };
 ///////////////////////////////////////////////////////////////////////////////
@@ -106,8 +108,8 @@ int main(int argc, char* argv[])
     nPortNo = atol(argv[1]);
     
     // 接続中のソケット管理配列の初期化
-	int clientSock[CLIENT_MAX];
-	memset(&clientSock, -1, sizeof(clientSock));
+	//int clientSock[CLIENT_MAX];
+	//memset(&clientSock, -1, sizeof(clientSock));
 
     // listen用sockaddrの設定
 	struct sockaddr_in srcAddr;
@@ -162,12 +164,13 @@ int main(int argc, char* argv[])
 		// listen用ソケット(接続待ち)
 		FD_SET(srcSocket, &readfds);
 
+		/*
 		// 接続済みソケットの登録
 		for(int i=0; i< CLIENT_MAX; i++) {
 			if ( clientSock[i] != -1 ) {//-1は未接続なソケット
 				FD_SET( clientSock[i], &readfds);//有効なソケット用にビットを立てる
 			}
-		}
+		}*/
 
 		// タイムアウトの設定
 		struct timeval  tval;
@@ -226,15 +229,34 @@ int main(int argc, char* argv[])
 					inet_ntoa(dstAddr.sin_addr),
 					dstSocket);
 
+        	// クライアントとの通信
+			std::thread th{ConnectClient( dstSocket)};
+			const std::thread::id hoge = th.get_id();
+			
+			//配列かVectorかMapに保存しておく
+
+			//th.join();
+			//デタッチ
+			th.detach();
+
+			/*
 			// クライアントとの通信ソケットを管理配列に保存
+			int num = 0;
 			for(int i=0; i< CLIENT_MAX; i++) {
 				if ( clientSock[i] == -1 ) {
 					clientSock[i] = dstSocket;
 					break;
+				}else{
+					num ++;
 				}
 			}
+			if(num >= CLIENT_MAX){
+				printf("Exceed the max Client seets!");
+			}
+			*/
   		}
 
+		/*
   		// 既存クライアントからの書き込み要求
 		for(int nSockNo=0; nSockNo < CLIENT_MAX; nSockNo++) {
 			if ( clientSock[nSockNo] == -1 ) {
@@ -250,10 +272,14 @@ int main(int argc, char* argv[])
 
         	// クライアントとの通信
 			std::thread th{ConnectClient(nSockNo, dstSocket, clientSock)};
-			th.join();
-		} 	
+			//th.join();
+			//デタッチ
+			th.detach();
+		} 
+		*/	
 	}
 
+	/*
 	// クライアントとの通信ソケットをクローズ
 	for(int nSockNo=0; nSockNo < CLIENT_MAX; nSockNo++) {
 		if ( clientSock[nSockNo] == -1 ) {
@@ -261,7 +287,7 @@ int main(int argc, char* argv[])
 			continue;
 		}
 		close(clientSock[nSockNo]);
-	}
+	}*/
 
 	// 接続待ちソケットのクローズ
 	nRet = close(srcSocket);
