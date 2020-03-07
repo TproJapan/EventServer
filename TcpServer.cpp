@@ -60,7 +60,7 @@ class ConnectClient {
 					printf("recv error.\n");
 					printf("クライアント(%d)との接続が切れました\n", _dstSocket);
 					close(_dstSocket);
-					std::lock_guard<std::mutex> lk(clientSockMutex_);
+					//std::lock_guard<std::mutex> lk(clientSockMutex_);
 					//_clientSock[_nSockNo] = -1;
 					return;
 				}
@@ -82,7 +82,7 @@ class ConnectClient {
 					printf("send error.\n");
 					printf("クライアントとの接続が切れました\n");
 					close(_dstSocket);
-					std::lock_guard<std::mutex> lk(clientSockMutex_);
+					//std::lock_guard<std::mutex> lk(clientSockMutex_);
 					//_clientSock[_nSockNo] = -1;
 					return;
 				}
@@ -158,10 +158,10 @@ int main(int argc, char* argv[])
 		///////////////////////////////////////
 		// selectで監視するソケットの登録
 		///////////////////////////////////////
-		fd_set  readfds;
+		fd_set  readfds;//ビットフラグ管理変数
 		FD_ZERO(&readfds);//初期化
 
-		// listen用ソケット(接続待ち)
+		// readfdsにlisten用ソケットを登録。後でFD_ISSETでビットが立っていれば新規接続があったという事
 		FD_SET(srcSocket, &readfds);
 
 		/*
