@@ -17,14 +17,12 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <thread>
-#include <mutex>
-
-//gloabl変数
-std::mutex clientSockMutex_;
+#include <vector>
 
 ///////////////////////////////////////////////////////////////////////////////
 // define
 ///////////////////////////////////////////////////////////////////////////////
+typedef std::vector<std::thread::id> threadid_vector;
 #define CLIENT_MAX	32 //マシーンリソースに依存する数
 #define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
 #define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)
@@ -33,20 +31,15 @@ std::mutex clientSockMutex_;
 ///////////////////////////////////////////////////////////////////////////////
 class ConnectClient {
 	int  _dstSocket;
-	//int* _clientSock;
+
 	public:
 		ConnectClient(int dstSocket){
-			//_nSockNo = nSockNo;
 			_dstSocket = dstSocket;
-			//_clientSock = clientSock;
 		};
 		~ConnectClient(){};
 	public: 
 		void operator()(){
 			while(true){
-				//clientSockは書き換える可能性あるからmutexガード
-				//std::lock_guard<std::mutex> lk(clientSockMutex_);
-
 				printf("client(%d)クライアントとの通信を開始します\n", _dstSocket);
 				size_t stSize;
 				char buf[1024];
@@ -60,8 +53,6 @@ class ConnectClient {
 					printf("recv error.\n");
 					printf("クライアント(%d)との接続が切れました\n", _dstSocket);
 					close(_dstSocket);
-					//std::lock_guard<std::mutex> lk(clientSockMutex_);
-					//_clientSock[_nSockNo] = -1;
 					return;
 				}
 				
@@ -82,8 +73,6 @@ class ConnectClient {
 					printf("send error.\n");
 					printf("クライアントとの接続が切れました\n");
 					close(_dstSocket);
-					//std::lock_guard<std::mutex> lk(clientSockMutex_);
-					//_clientSock[_nSockNo] = -1;
 					return;
 				}
 				printf( "変換後:[%s] \n" ,buf);
@@ -106,10 +95,6 @@ int main(int argc, char* argv[])
     // ポート番号の設定
     int nPortNo;            // ポート番号
     nPortNo = atol(argv[1]);
-    
-    // 接続中のソケット管理配列の初期化
-	//int clientSock[CLIENT_MAX];
-	//memset(&clientSock, -1, sizeof(clientSock));
 
     // listen用sockaddrの設定
 	struct sockaddr_in srcAddr;
@@ -145,6 +130,9 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	//thread id管理Vector配列(0埋め)
+	threadid_vector threadid_vec(100);
+
 	// クライアントからの接続待ち
 	nRet = listen(srcSocket, 1);
 	if ( nRet == -1 ) {
@@ -163,14 +151,6 @@ int main(int argc, char* argv[])
 
 		// readfdsにlisten用ソケットを登録。後でFD_ISSETでビットが立っていれば新規接続があったという事
 		FD_SET(srcSocket, &readfds);
-
-		/*
-		// 接続済みソケットの登録
-		for(int i=0; i< CLIENT_MAX; i++) {
-			if ( clientSock[i] != -1 ) {//-1は未接続なソケット
-				FD_SET( clientSock[i], &readfds);//有効なソケット用にビットを立てる
-			}
-		}*/
 
 		// タイムアウトの設定
 		struct timeval  tval;
@@ -231,63 +211,15 @@ int main(int argc, char* argv[])
 
         	// クライアントとの通信
 			std::thread th{ConnectClient( dstSocket)};
-			const std::thread::id hoge = th.get_id();
+			const std::thread::id new_thread_id = th.get_id();
 			
-			//配列かVectorかMapに保存しておく
+			//Vectorに保存しておく
+			threadid_vec.push_back(new_thread_id);
 
-			//th.join();
 			//デタッチ
 			th.detach();
-
-			/*
-			// クライアントとの通信ソケットを管理配列に保存
-			int num = 0;
-			for(int i=0; i< CLIENT_MAX; i++) {
-				if ( clientSock[i] == -1 ) {
-					clientSock[i] = dstSocket;
-					break;
-				}else{
-					num ++;
-				}
-			}
-			if(num >= CLIENT_MAX){
-				printf("Exceed the max Client seets!");
-			}
-			*/
   		}
-
-		/*
-  		// 既存クライアントからの書き込み要求
-		for(int nSockNo=0; nSockNo < CLIENT_MAX; nSockNo++) {
-			if ( clientSock[nSockNo] == -1 ) {
-				// 無効なソケットなのでスキップ
-				continue;
-			}
-
-			dstSocket = clientSock[nSockNo];
-			if ( !FD_ISSET(dstSocket, &readfds) ) {
-				// 入力がないのでスキップ
-				continue;
-			}
-
-        	// クライアントとの通信
-			std::thread th{ConnectClient(nSockNo, dstSocket, clientSock)};
-			//th.join();
-			//デタッチ
-			th.detach();
-		} 
-		*/	
 	}
-
-	/*
-	// クライアントとの通信ソケットをクローズ
-	for(int nSockNo=0; nSockNo < CLIENT_MAX; nSockNo++) {
-		if ( clientSock[nSockNo] == -1 ) {
-			// 無効なソケットなのでスキップ
-			continue;
-		}
-		close(clientSock[nSockNo]);
-	}*/
 
 	// 接続待ちソケットのクローズ
 	nRet = close(srcSocket);
@@ -296,5 +228,12 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 	
+	//workerスレッドをクローズ
+	threadid_vector::iterator ite;
+
+	for(ite = threadid_vec.begin(); ite != threadid_vec.end(); ite++) {
+		//*ite
+	}
+
 	return(0);
 }
