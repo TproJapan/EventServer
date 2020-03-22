@@ -10,7 +10,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <sys/select.h>
-
+#include <iostream>
 #include <sys/wait.h>// wait
 #include <err.h>	// err
 #include <stdlib.h>	// exit
@@ -18,11 +18,14 @@
 #include <fcntl.h>
 #include <thread>
 #include <vector>
-
+#include <algorithm>
+#include "semlock.h"
 ///////////////////////////////////////////////////////////////////////////////
-// define
+// 共用変数
 ///////////////////////////////////////////////////////////////////////////////
+int server_status = 0;//サーバーステータス(0:起動, 1:シャットダウン)
 typedef std::vector<std::thread::id> threadid_vector;
+threadid_vector threadid_vec(1);//thread id管理Vector配列(0埋め)
 #define CLIENT_MAX	32 //マシーンリソースに依存する数
 #define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
 #define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)
@@ -31,20 +34,55 @@ typedef std::vector<std::thread::id> threadid_vector;
 ///////////////////////////////////////////////////////////////////////////////
 class ConnectClient {
 	int  _dstSocket;
-
+	bool _live;//生存管理フラグ
 	public:
 		ConnectClient(int dstSocket){
 			_dstSocket = dstSocket;
+			_live = true;
 		};
-		~ConnectClient(){};
+		~ConnectClient(){
+			//thread idをvectorから削除
+			std::thread::id this_id = std::this_thread::get_id();
+			auto it = std::find(threadid_vec.begin(), threadid_vec.end(), this_id);
+			if(it != threadid_vec.end()) threadid_vec.erase(it);
+		};
 	public: 
 		void operator()(){
-			while(true){
+			while(1){
+				///////////////////////////////////
+				// 排他制御でserver_statusチェック
+				///////////////////////////////////
+				int nRetS = 0;
+				//printf("Start is Waiting for resolving the Lock...\n");
+
+				nRetS = sem_lock(LOCK_ID_TYPE01,
+					IPC_CREAT);
+				if (nRetS != 0) {
+					//ここでスピンループする
+					std::cout << "sem_lock error in Worker Thread:" << std::this_thread::get_id() << ", nRet=" << nRetS << std::endl;
+					continue;
+				}
+				//printf("Locked by Worker Thread...\n");
+
+				if(server_status != 0) _live = false;
+
+				//アンロック
+				semUnLock(LOCK_ID_TYPE01);
+
+				//終了確認
+				if(_live == false){
+					std::cout << "Thread:" << std::this_thread::get_id() << "を終了します" << std::endl;
+				}
+
+
+				///////////////////////////////////
+				// 通信
+				///////////////////////////////////
 				printf("client(%d)クライアントとの通信を開始します\n", _dstSocket);
 				size_t stSize;
 				char buf[1024];
 				
-				// クライアントから受信
+				// クライアントから受信(ここで固まる??からサーバーステータスチェックが頻繁にできない)
 				stSize = recv(_dstSocket,
 							buf,
 							sizeof(buf),
@@ -129,9 +167,6 @@ int main(int argc, char* argv[])
 		printf("bind error\n");
 		return -1;
 	}
-
-	//thread id管理Vector配列(0埋め)
-	threadid_vector threadid_vec(100);
 
 	// クライアントからの接続待ち
 	nRet = listen(srcSocket, 1);
@@ -225,14 +260,18 @@ int main(int argc, char* argv[])
 	nRet = close(srcSocket);
 	if ( nRet == -1 ) {
 		printf("close error\n");
-		return -1;
+		//return -1;
 	}
 	
 	//workerスレッドをクローズ
-	threadid_vector::iterator ite;
+	server_status = 1;
 
-	for(ite = threadid_vec.begin(); ite != threadid_vec.end(); ite++) {
-		//*ite
+	while(1){
+		sleep(2);
+		bool result = threadid_vec.empty();
+		if(result == true) break;
+
+		//ToDo:タイマーで1分待って強制終了
 	}
 
 	return(0);
