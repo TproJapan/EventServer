@@ -19,7 +19,6 @@
 #include <thread>
 #include <vector>
 #include <algorithm>
-#include "semlock.h"
 #include <mutex>
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
