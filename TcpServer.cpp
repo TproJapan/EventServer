@@ -20,6 +20,7 @@
 #include <vector>
 #include <algorithm>
 #include "semlock.h"
+#include <mutex>
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
 ///////////////////////////////////////////////////////////////////////////////
@@ -32,6 +33,12 @@ threadid_vector threadid_vec(1);//thread id管理Vector配列(0埋め)
 ///////////////////////////////////////////////////////////////////////////////
 //引数あり、クラスでの関数オブジェクト
 ///////////////////////////////////////////////////////////////////////////////
+std::mutex mtx;
+int GetServerStatus(){
+	std::lock_guard<std::mutex> lock(mtx);
+	return server_status;
+}
+
 class ConnectClient {
 	int  _dstSocket;
 	bool _live;//生存管理フラグ
@@ -52,28 +59,14 @@ class ConnectClient {
 				///////////////////////////////////
 				// 排他制御でserver_statusチェック
 				///////////////////////////////////
-				int nRetS = 0;
-				//printf("Start is Waiting for resolving the Lock...\n");
 
-				nRetS = sem_lock(LOCK_ID_TYPE01,
-					IPC_CREAT);
-				if (nRetS != 0) {
-					//ここでスピンループする
-					std::cout << "sem_lock error in Worker Thread:" << std::this_thread::get_id() << ", nRet=" << nRetS << std::endl;
-					continue;
-				}
-				//printf("Locked by Worker Thread...\n");
-
-				if(server_status != 0) _live = false;
-
-				//アンロック
-				semUnLock(LOCK_ID_TYPE01);
+				if(GetServerStatus() != 0) _live = false;
 
 				//終了確認
 				if(_live == false){
 					std::cout << "Thread:" << std::this_thread::get_id() << "を終了します" << std::endl;
+					return;
 				}
-
 
 				///////////////////////////////////
 				// 通信
@@ -82,7 +75,34 @@ class ConnectClient {
 				size_t stSize;
 				char buf[1024];
 				
-				// クライアントから受信(ここで固まる??からサーバーステータスチェックが頻繁にできない)
+				// タイムアウトの設定
+				struct timeval  tval;
+				tval.tv_sec  = SELECT_TIMER_SEC	;	// time_t  秒
+				tval.tv_usec = SELECT_TIMER_USEC;	// suseconds_t  マイクロ秒
+
+				fd_set  readfds;//ビットフラグ管理変数
+				FD_ZERO(&readfds);//初期化
+
+				FD_SET(_dstSocket, &readfds);
+
+				int nRet = select(FD_SETSIZE,
+								&readfds,
+								NULL,
+								NULL,
+								&tval );
+
+				if( nRet == -1 ) {
+					// selectが異常終了
+					//システムコールのエラーを文字列で標準出力してくれる
+					//エラーメッセージの先頭に"select"と表示される(自分用の目印))
+					perror("select");
+					exit( 1 );
+				}
+				else if ( nRet == 0 ) {
+					printf("workerスレッドでタイムアウト発生\n");
+					continue;
+				}
+
 				stSize = recv(_dstSocket,
 							buf,
 							sizeof(buf),
@@ -197,7 +217,7 @@ int main(int argc, char* argv[])
 
 		//msgrsv:引数でmsgflg に IPC_NOWAIT
 
-		//第一引数は一番大きなディスクリプター番号
+		//第一引数はシステムがサポートするデスクリプタの最大数
 		//タイムアウト不要の場合は第5引数にnull
 		//第二引数は読み込み用FDS
 		//第3引数は書き込み用fds
@@ -224,7 +244,7 @@ int main(int argc, char* argv[])
 		///////////////////////////////////////
   		// 反応のあったソケットをチェック
 		///////////////////////////////////////
-  		 // 新規のクライアントから接続要求がきたかどうか確認
+  		 // 新規のクライアントから接続要求がきた
   		if ( FD_ISSET(srcSocket, &readfds) ) {
   			printf("クライアント接続要求を受け付けました\n");
 
@@ -272,6 +292,7 @@ int main(int argc, char* argv[])
 		if(result == true) break;
 
 		//ToDo:タイマーで1分待って強制終了
+		// alerm関数でsigalerm捕捉。もしくは時刻をcompareして指定時間経過を調べる
 	}
 
 	return(0);
