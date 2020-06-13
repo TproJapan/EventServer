@@ -1,6 +1,5 @@
-///////////////////////////////////////////////////////////////////////////////
-//  TcpServer
-///////////////////////////////////////////////////////////////////////////////
+#include <signal.h>
+#include <errno.h>
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -8,7 +7,6 @@
 #include <arpa/inet.h>
 #include <unistd.h>
 #include <ctype.h>
-#include <stdlib.h>
 #include <sys/select.h>
 #include <iostream>
 #include <sys/wait.h>// wait
@@ -20,24 +18,38 @@
 #include <vector>
 #include <algorithm>
 #include <mutex>
+#include <pthread.h>
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
 ///////////////////////////////////////////////////////////////////////////////
 int server_status = 0;//サーバーステータス(0:起動, 1:シャットダウン)
+bool main_thread_flag = true;
+
+//std::thread vector
 typedef std::vector<std::thread::id> threadid_vector;
-threadid_vector threadid_vec(1);//thread id管理Vector配列(0埋め)
+threadid_vector threadid_vec;//thread id管理Vector配列
+
+//pthread_t vector
+typedef std::vector<pthread_t> pthreadid_vector;
+pthreadid_vector pthreadid_vec;//pthread id管理Vector配列
+
 #define CLIENT_MAX	32 //マシーンリソースに依存する数
 #define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
 #define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)
 ///////////////////////////////////////////////////////////////////////////////
-//引数あり、クラスでの関数オブジェクト
+// 関数
 ///////////////////////////////////////////////////////////////////////////////
+void sigalrm_handler(int signo);
+void sigusr2_handler(int signo);
+
 std::mutex mtx;
 int GetServerStatus(){
 	std::lock_guard<std::mutex> lock(mtx);
 	return server_status;
 }
-
+///////////////////////////////////////////////////////////////////////////////
+//引数あり、クラスでの関数オブジェクト
+///////////////////////////////////////////////////////////////////////////////
 class ConnectClient {
 	int  _dstSocket;
 	bool _live;//生存管理フラグ
@@ -47,10 +59,17 @@ class ConnectClient {
 			_live = true;
 		};
 		~ConnectClient(){
-			//thread idをvectorから削除
 			std::thread::id this_id = std::this_thread::get_id();
 			auto it = std::find(threadid_vec.begin(), threadid_vec.end(), this_id);
-			if(it != threadid_vec.end()) threadid_vec.erase(it);
+
+			if(it != threadid_vec.end()) {
+				//C++11らしい記述で、pthread_tをvectorから削除
+				size_t index = std::distance(threadid_vec.begin(), it);
+				pthreadid_vec.erase(pthreadid_vec.begin() + index);
+
+				//std::thread::idをvectorから削除
+				threadid_vec.erase(it);
+			}
 		};
 	public: 
 		void operator()(){
@@ -91,13 +110,16 @@ class ConnectClient {
 								&tval );
 
 				if( nRet == -1 ) {
-					// selectが異常終了
-					//システムコールのエラーを文字列で標準出力してくれる
-					//エラーメッセージの先頭に"select"と表示される(自分用の目印))
-					perror("select");
-					exit( 1 );
-				}
-				else if ( nRet == 0 ) {
+					if(errno == EINTR){//シグナル割り込みは除外
+						continue;
+					}else{
+						// selectが異常終了
+						//システムコールのエラーを文字列で標準出力してくれる
+						//エラーメッセージの先頭に"select"と表示される(自分用の目印))
+						perror("select");
+						exit( 1 );
+					}
+				}else if ( nRet == 0 ) {
 					printf("workerスレッドでタイムアウト発生\n");
 					continue;
 				}
@@ -153,6 +175,50 @@ int main(int argc, char* argv[])
     int nPortNo;            // ポート番号
     nPortNo = atol(argv[1]);
 
+	///////////////////////////////////
+    // シグナルハンドラの設定
+    ///////////////////////////////////
+    struct sigaction act;
+    memset(&act, 0, sizeof(act)); //メモリにゴミが入っているので初期化
+    act.sa_handler = sigalrm_handler;
+    act.sa_flags = SA_RESTART; //何度シグナルが来てもハンドラ実行を許可する
+
+	///////////////////////////////////
+    // 割り込みを抑止するシグナルの設定
+    ///////////////////////////////////
+    sigset_t sigset; // シグナルマスク
+    int nRet = 0;
+
+    //シグナルマスクの初期化
+	nRet = sigemptyset(&sigset);
+    if( nRet != 0 ) return -1;
+
+    //Control-Cで割り込まれないようにする
+    nRet = sigaddset(&sigset, SIGUSR1);
+    if( nRet != 0 ) return -1;
+    act.sa_mask = sigset;
+
+	///////////////////////////////////
+    // SIGALRM捕捉
+    ///////////////////////////////////
+    //第1引数はシステムコール番号
+    //第2引数は第1引数で指定したシステムコールで呼び出したいアクション
+    //第3引数は第1引数で指定したシステムコールでこれまで呼び出されていたアクションが格納される。NULLだとこれまでの動作が破棄される
+    nRet = sigaction(SIGALRM,&act,NULL);
+    if ( nRet == -1 ) err(EXIT_FAILURE, "sigaction(sigalrm) error");
+
+
+	///////////////////////////////////
+    // SIGUSR2捕捉
+    ///////////////////////////////////
+	memset(&act, 0, sizeof(act));//再度初期化
+	act.sa_handler = sigusr2_handler;
+	nRet = sigaction(SIGUSR2,&act,NULL);
+	if ( nRet == -1 ) err(EXIT_FAILURE, "sigaction(siguer2) error");
+
+	///////////////////////////////////
+    // socketの設定
+    ///////////////////////////////////
     // listen用sockaddrの設定
 	struct sockaddr_in srcAddr;
 	memset(&srcAddr, 0, sizeof(srcAddr));
@@ -169,7 +235,6 @@ int main(int argc, char* argv[])
 	}
 
 	// ソケットのバインド
-	int nRet;
 	const int on = 1;
 
 	//setsockoptは-1だと失敗
@@ -194,7 +259,7 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	while(1) {
+	while(main_thread_flag) {
 	 	int dstSocket = -1;		// クライアントとの通信ソケット
 
 		///////////////////////////////////////
@@ -229,15 +294,16 @@ int main(int argc, char* argv[])
 						&tval );
 
 		if( nRet == -1 ) {
-			// selectが異常終了
-			//システムコールのエラーを文字列で標準出力してくれる
-			//エラーメッセージの先頭に"select"と表示される(自分用の目印))
-  			perror("select");
-  			exit( 1 );
-  		}
-  		else if ( nRet == 0 ) {
-  			printf("selectでタイムアウト発生\n");
-  			continue;
+			if(errno == EINTR){//シグナル割り込みは除外
+				continue;
+			}else{
+				// selectが異常終了
+				perror("select");
+				exit( 1 );
+			}
+	  	}else if( nRet == 0 ){
+			printf("selectでタイムアウト発生\n");
+			continue;
   		}
 
 		///////////////////////////////////////
@@ -269,6 +335,7 @@ int main(int argc, char* argv[])
 			
 			//Vectorに保存しておく
 			threadid_vec.push_back(new_thread_id);
+			pthreadid_vec.push_back(th.native_handle());//C++11式、プラットフォーム固有のスレッドハンドラ取得
 
 			//デタッチ
 			th.detach();
@@ -279,20 +346,66 @@ int main(int argc, char* argv[])
 	nRet = close(srcSocket);
 	if ( nRet == -1 ) {
 		printf("close error\n");
-		//return -1;
 	}
 	
 	//workerスレッドをクローズ
 	server_status = 1;
 
+	//sigalerm発行
+	//ToDo:windowdだとイベントを起こす関数があるはずなのでそれを使い、それをコールバック処理でthreadを殺しにいく
+	alarm(60);
+	printf("alarmがセットされました\n");
+
+	int past_seconds = 0;
+
 	while(1){
 		sleep(2);
-		bool result = threadid_vec.empty();
-		if(result == true) break;
+		past_seconds += 2;
+		printf("%d秒経過しました\n", past_seconds);
 
-		//ToDo:タイマーで1分待って強制終了
-		// alerm関数でsigalerm捕捉。もしくは時刻をcompareして指定時間経過を調べる
+		bool result = threadid_vec.empty();
+		if(result == true){
+			printf("ループを抜けます\n");
+			break;
+		}
 	}
 
+	printf("正常終了します\n");
 	return(0);
+}
+
+void sigalrm_handler(int signo)
+{
+	char work[256];
+	sprintf(work, "sig_handler started. signo=%d\n", signo);
+
+	//pthreadid_vecに入っているスレッドidを直指定してスレッドを殺しにいく
+	// C++11 Range based for
+	for(const auto& item: pthreadid_vec) {
+		std::cout << "pthread id:" << item << "\n";
+	}
+	
+	for(const auto& item: pthreadid_vec) {
+		pthread_kill(item,SIGKILL);
+		std::cout << "Killed pthread id:" << item << "\n";
+	}
+
+	//ToDo 最後にもう一度pthread_killを出す。戻り値がエラーなら既に存在しないスレッドidに対してkillを出しているという事なので成功している
+	for(const auto& item: pthreadid_vec) {
+		pthread_kill(item,SIGKILL);
+	}
+
+	//ToDo:windowsだとpthreadではなくTerminateThread
+	//Memo:signal,sigactionもlinuxのみの機構。
+
+	return;
+}
+
+void sigusr2_handler(int signo){
+	char work[256];
+	sprintf(work, "sig_handler started. signo=%d\n", signo);
+
+	main_thread_flag = false;
+	printf("main_thread_flagを書き換えました\n");
+	return;
 }
