@@ -11,7 +11,8 @@ Tcp or Udp Server/Clinet Project for my Studying C++
 
 # [停止方法]
 (1) サーバー
-    control + c　で終了させる。
+    $ ps aux | grep -e TcpServer
+    $ ./Stop TcpServerのスレッドid
 
 (2) クライアント
     「T子文字のアルファベットを入力してください」

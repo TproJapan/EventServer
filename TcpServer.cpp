@@ -78,7 +78,7 @@ class ConnectClient {
 				// 排他制御でserver_statusチェック
 				///////////////////////////////////
 
-				if(GetServerStatus() != 0) _live = false;
+				//if(GetServerStatus() != 0) _live = false;
 
 				//終了確認
 				if(_live == false){
@@ -386,13 +386,13 @@ void sigalrm_handler(int signo)
 	}
 	
 	for(const auto& item: pthreadid_vec) {
-		pthread_kill(item,SIGKILL);
+		pthread_kill(item,SIGINT);
 		std::cout << "Killed pthread id:" << item << "\n";
 	}
 
 	//ToDo 最後にもう一度pthread_killを出す。戻り値がエラーなら既に存在しないスレッドidに対してkillを出しているという事なので成功している
 	for(const auto& item: pthreadid_vec) {
-		pthread_kill(item,SIGKILL);
+		pthread_kill(item,SIGINT);
 	}
 
 	//ToDo:windowsだとpthreadではなくTerminateThread
