@@ -193,8 +193,8 @@ int main(int argc, char* argv[])
 	nRet = sigemptyset(&sigset);
     if( nRet != 0 ) return -1;
 
-    //Control-Cで割り込まれないようにする
-    nRet = sigaddset(&sigset, SIGUSR1);
+    //Control-C(SIGINT)で割り込まれないようにする
+    nRet = sigaddset(&sigset, SIGINT);
     if( nRet != 0 ) return -1;
     act.sa_mask = sigset;
 
@@ -330,6 +330,7 @@ int main(int argc, char* argv[])
 					dstSocket);
 
         	// クライアントとの通信
+			//ToDo:threadをnewしてvectorにpush_backしてみる
 			std::thread th{ConnectClient( dstSocket)};
 			const std::thread::id new_thread_id = th.get_id();
 			
@@ -386,13 +387,9 @@ void sigalrm_handler(int signo)
 	}
 	
 	for(const auto& item: pthreadid_vec) {
-		pthread_kill(item,SIGINT);
+		int r = pthread_cancel(item);//pthread_killではなく
+		printf("pthread_cancel result = %d\n", r);
 		std::cout << "Killed pthread id:" << item << "\n";
-	}
-
-	//ToDo 最後にもう一度pthread_killを出す。戻り値がエラーなら既に存在しないスレッドidに対してkillを出しているという事なので成功している
-	for(const auto& item: pthreadid_vec) {
-		pthread_kill(item,SIGINT);
 	}
 
 	//ToDo:windowsだとpthreadではなくTerminateThread

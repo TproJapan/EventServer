@@ -11,7 +11,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <stdlib.h>
-
+#include <errno.h>
 ///////////////////////////////////////////////////////////////////////////////
 // main
 ///////////////////////////////////////////////////////////////////////////////
@@ -95,7 +95,8 @@ int main(int argc, char* argv[])
                       sizeof(buf),
                       0);
         if ( stSize <= 0 ) {
-          printf("recv error.\n");
+          printf("recv error.　errno = %d\n", errno);//エラーナンバーが0なら異常終了
+          printf("stSize = %d\n", (int)stSize);//stSizeが0ならソケットが切れたと言う事。失敗はだいたいstSizeが-1だとerrnoは4とか
           break;
         }
         printf("→ %s\n",buf);
