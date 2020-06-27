@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{c0f71727-67fe-4822-b2f8-8475523d89af}</ProjectGuid>
-    <RootNamespace>tcpthreadnodaemontextwin</RootNamespace>
+    <ProjectGuid>{779f05ee-6fbd-4434-8488-fc78b60c3c62}</ProjectGuid>
+    <RootNamespace>TcpServer</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -139,8 +139,6 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Stop.cpp" />
-    <ClCompile Include="TcpClient.cpp" />
     <ClCompile Include="TcpServer.cpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />

@@ -14,6 +14,7 @@
 #include <mutex>
 
 #ifdef _WIN32
+#pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
 #include <WinSock2.h>
 #else
@@ -41,6 +42,7 @@ threadid_vector threadid_vec;//thread id管理Vector配列
 typedef std::vector<pthread_t> pthreadid_vector;
 pthreadid_vector pthreadid_vec;//pthread id管理Vector配列
 #endif
+
 #define CLIENT_MAX	32 //マシーンリソースに依存する数
 #define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
 #define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)

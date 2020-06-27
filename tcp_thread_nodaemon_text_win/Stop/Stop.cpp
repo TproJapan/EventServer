@@ -1,4 +1,4 @@
-#include <signal.h>
+ï»¿#include <signal.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <errno.h>
@@ -10,13 +10,13 @@
 
 int main(int argc, char* argv[])
 {
-	//ˆø”ƒ`ƒFƒbƒN
+	//å¼•æ•°ãƒã‚§ãƒƒã‚¯
 	if (argc != 2) {
 		perror("Stop Process No\n");
 		return -1;
 	}
 
-	//ps aux | grep -e TcpServer‚Å’²‚×‚½ƒvƒƒZƒXid‚ÉSIGUSR1‚ğ‘—‚é
+	//ps aux | grep -e TcpServerã§èª¿ã¹ãŸãƒ—ãƒ­ã‚»ã‚¹idã«SIGUSR1ã‚’é€ã‚‹
 	int target_pid = atoi(argv[1]);
 #ifdef _WIN32
 #else
