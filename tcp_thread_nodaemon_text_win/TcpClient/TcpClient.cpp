@@ -79,8 +79,12 @@ int main(int argc, char* argv[])
         (struct sockaddr*)&dstAddr,
         sizeof(dstAddr));
     if (nRet == -1) {
+#ifdef _WIN32
         dwRet = WSAGetLastError();
         printf("%s に接続できませんでした. dwRet=%d\n", destination, dwRet);
+#else
+        printf("%s に接続できませんでした. errno = %d\n", destination, errno);
+#endif
         return(-1);
     }
     printf("%s に接続しました\n", destination);
@@ -116,8 +120,12 @@ int main(int argc, char* argv[])
             sizeof(buf),
             0);
         if (stSize <= 0) {
+#ifdef _WIN32
             dwRet = WSAGetLastError();
             printf("recv error.　errno = %d\n", dwRet);//エラーナンバー(http://chokuto.ifdef.jp/advanced/prm/winsock_error_code.html)
+#else
+            printf("recv error.　errno = %d\n", errno);//エラーナンバーが0なら異常終了
+#endif
             printf("stSize = %d\n", (int)stSize);//stSizeが0ならソケットが切れたと言う事。失敗はだいたいstSizeが-1だとerrnoは4とか
             break;
         }
