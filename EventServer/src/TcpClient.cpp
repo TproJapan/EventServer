@@ -1,14 +1,12 @@
-ï»¿///////////////////////////////////////////////////////////////////////////////
-//  TcpServer
+///////////////////////////////////////////////////////////////////////////////
+//  TcpClient
 ///////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #ifdef _WIN32
-#pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
 #include <WinSock2.h>
-#pragma warning(disable:4996)// inet_addr()é–¢æ•°ã§è­¦å‘ŠãŒå‡ºã‚‹å ´åˆã¯ä»¥ä¸‹ã§è­¦å‘Šã‚’ç„¡åŠ¹åŒ–
 #else
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -25,32 +23,20 @@
 int main(int argc, char* argv[])
 {
     ///////////////////////////////////
-    // ã‚³ãƒãƒ³ãƒ‰å¼•æ•°ã®è§£æ
+    // ƒRƒ}ƒ“ƒhˆø”‚Ì‰ğÍ
     ///////////////////////////////////
     if (argc != 3) {
         printf("TcpClient IPAddress portNo\n");
         return -1;
     }
 
-    int nRet;
-    char destination[32];   // é€ä¿¡å…ˆIPã‚¢ãƒ‰ãƒ¬ã‚¹
-    int nPortNo;            // ãƒãƒ¼ãƒˆç•ªå·
+    char destination[32];   // ‘—MæIPƒAƒhƒŒƒX
+    int nPortNo;            // ƒ|[ƒg”Ô†
     strcpy(destination, argv[1]);
     nPortNo = atol(argv[2]);
 
-#ifdef _WIN32
-    // WinSockã®åˆæœŸåŒ–
-    DWORD dwRet = 0;
-    WSADATA wsaData;
-    nRet = WSAStartup(MAKEWORD(2, 0), &wsaData);
-    if (nRet != 0) {
-        printf("WSAStartup error\n");
-        return(-1);
-    }
-#endif
-
     ///////////////////////////////////
-    //sockaddr_in æ§‹é€ ä½“ã®ä½œæˆ
+    //sockaddr_in \‘¢‘Ì‚Ìì¬
     ///////////////////////////////////
     struct sockaddr_in dstAddr;
     memset(&dstAddr, 0, sizeof(dstAddr));
@@ -58,52 +44,59 @@ int main(int argc, char* argv[])
     dstAddr.sin_port = htons(nPortNo);
     dstAddr.sin_addr.s_addr = inet_addr(destination);
 
+#ifdef _WIN32   // konishi
+    WSADATA	WsaData;
+    WORD wVersionRequested;
+    wVersionRequested = MAKEWORD(2, 0);
+    if (WSAStartup(wVersionRequested, &WsaData) != 0) {
+        printf("WSAStartup() error. code=%d\n", WSAGetLastError());
+        return -1;
+    }
+#endif
     ///////////////////////////////////
-    //ç©ºã®ã‚½ã‚±ãƒƒãƒˆã®ç”Ÿæˆ
+    //‹ó‚Ìƒ\ƒPƒbƒg‚Ì¶¬
     ///////////////////////////////////
 #ifdef _WIN32
-    SOCKET dstSocket;
+    SOCKET dstSocket;   // konishi
 #else
     int dstSocket;
 #endif
     dstSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (dstSocket == -1) {
-        printf("ã‚½ã‚±ãƒƒãƒˆã®ä½œæˆã«å¤±æ•—\n");
+        printf("ƒ\ƒPƒbƒg‚Ìì¬‚É¸”s\n");
         return(-1);
     }
 
-    ///////////////////////////////////
-    //ç©ºã®ã‚½ã‚±ãƒƒãƒˆã«sockaddr_inæ§‹é€ ä½“ã‚’bindã—ã¦ã‚µãƒ¼ãƒã«æ¥ç¶š
-    ///////////////////////////////////
+
+    ///////////////////////////////////////////////////////
+    //‹ó‚Ìƒ\ƒPƒbƒg‚Ésockaddr_in\‘¢‘Ì‚ğbind‚µ‚ÄƒT[ƒo‚ÉÚ‘±
+    ///////////////////////////////////////////////////////
+    int nRet;
     nRet = connect(dstSocket,
         (struct sockaddr*)&dstAddr,
         sizeof(dstAddr));
     if (nRet == -1) {
-#ifdef _WIN32
-        dwRet = WSAGetLastError();
-        printf("%s ã«æ¥ç¶šã§ãã¾ã›ã‚“ã§ã—ãŸ. dwRet=%d\n", destination, dwRet);
-#else
-        printf("%s ã«æ¥ç¶šã§ãã¾ã›ã‚“ã§ã—ãŸ. errno = %d\n", destination, errno);
-#endif
+        printf("%s ‚ÉÚ‘±‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½\n", destination);
         return(-1);
     }
-    printf("%s ã«æ¥ç¶šã—ã¾ã—ãŸ\n", destination);
+    printf("%s ‚ÉÚ‘±‚µ‚Ü‚µ‚½\n", destination);
+
 
     ///////////////////////////////////
-    //ã€€ã‚µãƒ¼ãƒã¨ã®é€šä¿¡
+    //@ƒT[ƒo‚Æ‚Ì’ÊM
     ///////////////////////////////////
     while (1) {
-        // é€ä¿¡ã™ã‚‹ãƒ‡ãƒ¼ã‚¿ã®èª­ã¿è¾¼ã¿
+        // ‘—M‚·‚éƒf[ƒ^‚Ì“Ç‚İ‚İ
         char   buf[1024];
-        printf("å­æ–‡å­—ã®ã‚¢ãƒ«ãƒ•ã‚¡ãƒ™ãƒƒãƒˆã‚’å…¥åŠ›ã—ã¦ãã ã•ã„\n");
+        printf("q•¶š‚ÌƒAƒ‹ƒtƒ@ƒxƒbƒg‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢\n");
         scanf("%s", buf);
 
         if (strcmp(buf, ".") == 0) {
-            printf("å‡¦ç†ã‚’çµ‚äº†ã—ã¾ã™\n");
+            printf("ˆ—‚ğI—¹‚µ‚Ü‚·\n");
             break;
         }
 
-        //ã€€ãƒ‡ãƒ¼ã‚¿ã®é€ä¿¡
+        //@ƒf[ƒ^‚Ì‘—M
         size_t stSize;
         stSize = send(dstSocket,
             buf,
@@ -114,33 +107,24 @@ int main(int argc, char* argv[])
             break;
         }
 
-        // ã‚µãƒ¼ãƒã‹ã‚‰ã®å¿œç­”ã‚’å—ä¿¡
+        // ƒT[ƒo‚©‚ç‚Ì‰“š‚ğóM
         stSize = recv(dstSocket,
             buf,
             sizeof(buf),
             0);
         if (stSize <= 0) {
-#ifdef _WIN32
-            dwRet = WSAGetLastError();
-            printf("recv error.ã€€errno = %d\n", dwRet);//ã‚¨ãƒ©ãƒ¼ãƒŠãƒ³ãƒãƒ¼(http://chokuto.ifdef.jp/advanced/prm/winsock_error_code.html)
-#else
-            printf("recv error.ã€€errno = %d\n", errno);//ã‚¨ãƒ©ãƒ¼ãƒŠãƒ³ãƒãƒ¼ãŒ0ãªã‚‰ç•°å¸¸çµ‚äº†
-#endif
-            printf("stSize = %d\n", (int)stSize);//stSizeãŒ0ãªã‚‰ã‚½ã‚±ãƒƒãƒˆãŒåˆ‡ã‚ŒãŸã¨è¨€ã†äº‹ã€‚å¤±æ•—ã¯ã ã„ãŸã„stSizeãŒ-1ã ã¨errnoã¯4ã¨ã‹
+            printf("recv error.@errno = %d\n", errno);//ƒGƒ‰[ƒiƒ“ƒo[‚ª0‚È‚çˆÙíI—¹
+            printf("stSize = %d\n", (int)stSize);//stSize‚ª0‚È‚çƒ\ƒPƒbƒg‚ªØ‚ê‚½‚ÆŒ¾‚¤–B¸”s‚Í‚¾‚¢‚½‚¢stSize‚ª-1‚¾‚Æerrno‚Í4‚Æ‚©
             break;
         }
-        printf("â†’ %s\n", buf);
+        printf("¨ %s\n", buf);
     }
 
+    // ƒ\ƒPƒbƒg‚ğƒNƒ[ƒY
 #ifdef _WIN32
-    closesocket(dstSocket);
+    closesocket(dstSocket); // konishi
 #else
     close(dstSocket);
-#endif
-
-#ifdef _WIN32
-    // WinSockã®çµ‚äº†
-    WSACleanup();
 #endif
     return(0);
 }

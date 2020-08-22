@@ -14,7 +14,6 @@
 #include <mutex>
 
 #ifdef _WIN32
-#pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
 #include <WinSock2.h>
 #else
@@ -42,15 +41,16 @@ threadid_vector threadid_vec;//thread id管理Vector配列
 typedef std::vector<pthread_t> pthreadid_vector;
 pthreadid_vector pthreadid_vec;//pthread id管理Vector配列
 #endif
-
 #define CLIENT_MAX	32 //マシーンリソースに依存する数
 #define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
 #define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)
 ///////////////////////////////////////////////////////////////////////////////
 // 関数
 ///////////////////////////////////////////////////////////////////////////////
+#ifndef _WIN32
 void sigalrm_handler(int signo);
 void sigusr2_handler(int signo);
+#endif
 
 std::mutex mtx;
 int GetServerStatus() {
@@ -146,6 +146,7 @@ public:
 				printf("recv error.\n");
 				printf("クライアント(%d)との接続が切れました\n", _dstSocket);
 #ifdef _WIN32
+				closesocket(_dstSocket);
 #else
 				close(_dstSocket);
 #endif
@@ -153,22 +154,19 @@ public:
 			}
 
 			printf("変換前:[%s] ==> ", buf);
-			for (int i = 0; i < stSize; i++) { // bufの中の小文字を大文字に変換
+			for (int i = 0; i < (int)stSize; i++) { // bufの中の小文字を大文字に変換
 				if (isalpha(buf[i])) {
 					buf[i] = toupper(buf[i]);
 				}
 			}
 
 			// クライアントに返信
-			stSize = send(_dstSocket,
-				buf,
-				strlen(buf) + 1,
-				0);
-
+			stSize = send(_dstSocket, buf, strlen(buf) + 1, 0);
 			if (stSize != strlen(buf) + 1) {
 				printf("send error.\n");
 				printf("クライアントとの接続が切れました\n");
 #ifdef _WIN32
+				closesocket(_dstSocket);
 #else
 				close(_dstSocket);
 #endif
@@ -199,8 +197,7 @@ int main(int argc, char* argv[])
 	// シグナルハンドラの設定
 	///////////////////////////////////
 	int nRet = 0;
-#ifdef _WIN32
-#else
+#ifndef _WIN32
 	struct sigaction act;
 	memset(&act, 0, sizeof(act)); //メモリにゴミが入っているので初期化
 	act.sa_handler = sigalrm_handler;
@@ -229,7 +226,6 @@ int main(int argc, char* argv[])
 	nRet = sigaction(SIGALRM, &act, NULL);
 	if (nRet == -1) err(EXIT_FAILURE, "sigaction(sigalrm) error");
 
-
 	///////////////////////////////////
 	// SIGUSR2捕捉
 	///////////////////////////////////
@@ -237,6 +233,18 @@ int main(int argc, char* argv[])
 	act.sa_handler = sigusr2_handler;
 	nRet = sigaction(SIGUSR2, &act, NULL);
 	if (nRet == -1) err(EXIT_FAILURE, "sigaction(siguer2) error");
+#endif
+
+#ifdef _WIN32   // konishi
+	// WINSOCKの初期化
+	WSADATA	WsaData;
+	WORD wVersionRequested;
+	wVersionRequested = MAKEWORD(2, 0);
+	if (WSAStartup(wVersionRequested, &WsaData) != 0) {
+		printf("WSAStartup() error. code=%d\n", WSAGetLastError());
+		return -1;
+	}
+#endif
 
 	///////////////////////////////////
 	// socketの設定
@@ -249,7 +257,11 @@ int main(int argc, char* argv[])
 	srcAddr.sin_addr.s_addr = INADDR_ANY;
 
 	// ソケットの生成(listen用)
+#ifdef _WIN32
+	SOCKET srcSocket;
+#else
 	int srcSocket;
+#endif
 	srcSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (srcSocket == -1) {
 		printf("socket error\n");
@@ -258,10 +270,11 @@ int main(int argc, char* argv[])
 
 	// ソケットのバインド
 	const int on = 1;
-
-	//setsockoptは-1だと失敗
+#ifdef _WIN32
+	nRet = setsockopt(srcSocket, SOL_SOCKET, SO_REUSEADDR, (char*)&on, sizeof(on));
+#else
 	nRet = setsockopt(srcSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
-
+#endif
 	if (nRet == -1) {
 		printf("setsockopt error\n");
 		return -1;
@@ -282,8 +295,13 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+
 	while (main_thread_flag) {
+#ifdef _WIN32
+		SOCKET dstSocket = NULL;
+#else
 		int dstSocket = -1;		// クライアントとの通信ソケット
+#endif
 
 		///////////////////////////////////////
 		// selectで監視するソケットの登録
@@ -301,7 +319,6 @@ int main(int argc, char* argv[])
 
 		printf("新規接続とクライアントから書き込みを待っています.\n");
 
-
 		//msgrsv:引数でmsgflg に IPC_NOWAIT
 
 		//第一引数はシステムがサポートするデスクリプタの最大数
@@ -316,6 +333,17 @@ int main(int argc, char* argv[])
 			NULL,
 			&tval);
 
+#ifdef _WIN32
+		if (nRet == -1) {
+			// selectが異常終了
+			perror("select");
+			exit(1);
+		}
+		else if (nRet == 0) {
+			printf("selectでタイムアウト発生\n");
+			continue;
+		}
+#else
 		if (nRet == -1) {
 			if (errno == EINTR) {//シグナル割り込みは除外
 				continue;
@@ -330,6 +358,7 @@ int main(int argc, char* argv[])
 			printf("selectでタイムアウト発生\n");
 			continue;
 		}
+#endif
 
 		///////////////////////////////////////
 		// 反応のあったソケットをチェック
@@ -342,9 +371,16 @@ int main(int argc, char* argv[])
 			int dstAddrSize = sizeof(dstAddr);
 
 			//新規クライアント用socket確保
+#ifdef _WIN32
+			dstSocket = accept(srcSocket,
+				(struct sockaddr*)&dstAddr,
+				(int*)&dstAddrSize);
+#else
 			dstSocket = accept(srcSocket,
 				(struct sockaddr*)&dstAddr,
 				(socklen_t*)&dstAddrSize);
+#endif
+
 			if (dstSocket == -1) {
 				perror("accept");
 				continue;
@@ -354,26 +390,38 @@ int main(int argc, char* argv[])
 				inet_ntoa(dstAddr.sin_addr),
 				dstSocket);
 
-			// クライアントとの通信
-			//ToDo:threadをnewしてvectorにpush_backしてみる
+			//#ifndef _WIN32
+						// クライアントとの通信
+						//ToDo:threadをnewしてvectorにpush_backしてみる
 			std::thread th{ ConnectClient(dstSocket) };
 			const std::thread::id new_thread_id = th.get_id();
 
 			//Vectorに保存しておく
 			threadid_vec.push_back(new_thread_id);
-			pthreadid_vec.push_back(th.native_handle());//C++11式、プラットフォーム固有のスレッドハンドラ取得
+			//pthreadid_vec.push_back(th.native_handle());//C++11式、プラットフォーム固有のスレッドハンドラ取得
 
 			//デタッチ
 			th.detach();
+			//#endif
 		}
 	}
 
+
 	// 接続待ちソケットのクローズ
+#ifdef _WIN32
+	nRet = closesocket(srcSocket);
+	if (nRet == -1) {
+		printf("closesocket error\n");
+	}
+#else
 	nRet = close(srcSocket);
 	if (nRet == -1) {
 		printf("close error\n");
 	}
+#endif
 
+
+#ifndef _WIN32
 	//workerスレッドをクローズ
 	server_status = 1;
 
@@ -400,13 +448,12 @@ int main(int argc, char* argv[])
 	return(0);
 }
 
+#ifndef _WIN32
 void sigalrm_handler(int signo)
 {
 	char work[256];
 	sprintf(work, "sig_handler started. signo=%d\n", signo);
 
-#ifdef _WIN32
-#else
 	//pthreadid_vecに入っているスレッドidを直指定してスレッドを殺しにいく
 	// C++11 Range based for
 	for (const auto& item : pthreadid_vec) {
@@ -418,7 +465,6 @@ void sigalrm_handler(int signo)
 		printf("pthread_cancel result = %d\n", r);
 		std::cout << "Killed pthread id:" << item << "\n";
 	}
-#endif
 	//ToDo:windowsだとpthreadではなくTerminateThread
 	//Memo:signal,sigactionもlinuxのみの機構。
 
@@ -433,3 +479,4 @@ void sigusr2_handler(int signo) {
 	printf("main_thread_flagを書き換えました\n");
 	return;
 }
+#endif

@@ -3,16 +3,18 @@ Tcp or Udp Server/Clinet Project for my Studying C++
 
 # [起動方法]
 (1) サーバー
-    TcpServer 5000
+    #cd \Project Root\EventServer\Debug
+    #TcpServer2.exe 5000
       (5000はポート番号。システムで使用していない任意の番号で可)
 
 (2) クライアント
-    TcpClient 192.168.33.10 5000
+    #cd \Project Root\EventServer\Debug
+    #ipconfig(IPv4アドレス調べる)
+    #TcpClient.exe IPv4アドレス 5000
 
 # [停止方法]
 (1) サーバー
-    $ ps aux | grep -e TcpServer
-    $ ./Stop TcpServerのスレッドid
+    Ctrl + C
 
 (2) クライアント
     「T子文字のアルファベットを入力してください」
