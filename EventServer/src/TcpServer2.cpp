@@ -22,7 +22,7 @@ void deleteConnection(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
 ///////////////////////////////////////////////////////////////////////////////
 int server_status = 0;//サーバーステータス(0:起動, 1:シャットダウン)
 bool main_thread_flag = true;
-
+HANDLE	hMutex; //ミューテックスのハンドル
 
 #define CLIENT_MAX	32					// 同時接続可能クライアント数
 #define TIMEOUT_MSEC	3000			// タイムアウト時間(ミリ秒)
@@ -42,13 +42,64 @@ public:
 	};
 public:
 	void operator()() {
-		while (main_thread_flag) {
-/*
-			//ToDo
-			WSAWaitForMultipleEventsを仕込む
-			->WSAEnumNetworkEventsで発生イベント調査
-			->ReadとCloseを検出してrecvHandlerもしくはcloseHandlerに飛ばす
-*/
+		while (1) {
+			WaitForSingleObject(hMutex, INFINITE); //mutex 間は他のスレッドから変数を変更できない
+			if (!main_thread_flag) {
+				ReleaseMutex(hMutex);
+				break;
+			}
+			ReleaseMutex(hMutex);
+
+			//イベントを配列で管理
+			const int workierEventNum = 1;
+			HANDLE workerEventList[workierEventNum];
+			workerEventList[0] = _tmpEvent;
+
+			printf("書き込みを待っています.\n");
+			DWORD worker_dwTimeout = TIMEOUT_MSEC;
+
+			//イベント多重待ち
+			int worker_nRet = WSAWaitForMultipleEvents(workierEventNum, workerEventList, FALSE, worker_dwTimeout, FALSE);
+			if (worker_nRet == WSA_WAIT_FAILED)
+			{
+				printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+				break;
+			}
+
+			if (worker_nRet == WSA_WAIT_TIMEOUT) {
+				printf("タイムアウト発生!!!\n");
+				continue;
+			}
+
+			printf("WSAWaitForMultipleEvents nRet=%ld\n", worker_nRet);
+
+			// イベントを検知したHANDLE
+			HANDLE workerHandle = workerEventList[worker_nRet];
+
+			// イベントを検知したHANDLEと関連付けしているソケット
+			SOCKET workerSocket = _socketMap[workerHandle];
+
+			//イベント調査
+			WSANETWORKEVENTS events;
+			if (WSAEnumNetworkEvents(workerSocket, workerHandle, &events) == SOCKET_ERROR)
+			{
+				printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+				break;
+			}
+
+			//READ
+			if (events.lNetworkEvents & FD_READ)
+			{
+				// クライアントとの通信ソケットにデータが到着した
+				recvHandler(_socketMap, workerHandle);
+			}
+
+			//CLOSE
+			if (events.lNetworkEvents & FD_CLOSE)
+			{
+				// クライアントとの通信ソケットのクローズを検知
+				closeHandler(_socketMap, workerHandle);
+			}
 		}
 
 		deleteConnection(_socketMap, _tmpEvent);
@@ -144,23 +195,19 @@ int main(int argc, char* argv[])
 	std::map<HANDLE, SOCKET> socketMap;
 	socketMap[hEvent] = srcSocket;//listenソケットとイベントを結び付ける
 
+	hMutex = CreateMutex(NULL, FALSE, NULL);	//ミューテックス生成
+
 	while (main_thread_flag) {
-		//イベント待ち用のHANDLE配列の作成
-		HANDLE eventList[CLIENT_MAX];
-		int i = 0;
-		for (std::map<HANDLE, SOCKET>::iterator ite = socketMap.begin(); ite != socketMap.end(); ++ite)
-		{
-			eventList[i] = ite->first;
-			i++;
-		}
+		//イベントを配列で管理
+		const int mainEventNum = 1;
+		HANDLE eventList[mainEventNum];
+		eventList[0] = hEvent;//listenイベントのみ
 
 		printf("新規接続を待っています.\n");
 		//DWORD dwTimeout = WSA_INFINITE;	// 無限待ち
 		DWORD dwTimeout = TIMEOUT_MSEC;
 
-		//WSAWaitForMultipleEventsじゃなくてもいい?
-		//Listenを専門に検出するSingleなEventとタイムアウトがあればいいんだけど...?
-		nRet = WSAWaitForMultipleEvents(socketMap.size(), eventList, FALSE, dwTimeout, FALSE);
+		nRet = WSAWaitForMultipleEvents(mainEventNum, eventList, FALSE, dwTimeout, FALSE);
 		if (nRet == WSA_WAIT_FAILED)
 		{
 			printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
@@ -175,40 +222,10 @@ int main(int argc, char* argv[])
 		printf("WSAWaitForMultipleEvents nRet=%ld\n", nRet);
 
 		// イベントを検知したHANDLE
-		HANDLE workHandle = eventList[nRet];
+		HANDLE mainHandle = eventList[nRet];//これはhEventの事
 
-		// イベントを検知したHANDLEと関連付けしているソケット
-		SOCKET workSocket = socketMap[workHandle];
-
-		//イベントの調査
-		WSANETWORKEVENTS events;
-		if (WSAEnumNetworkEvents(workSocket, workHandle, &events) == SOCKET_ERROR)
-		{
-			printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
-			break;
-		}
-
-		//ACCEPT
-		if (events.lNetworkEvents & FD_ACCEPT)
-		{
-			// クライアントから新規接続を検知
-			acceptHandler(socketMap, workHandle);
-		}
-/*
-		//READ
-		if (events.lNetworkEvents & FD_READ)
-		{
-			// クライアントとの通信ソケットにデータが到着した
-			recvHandler(socketMap, workHandle);
-		}
-
-		//CLOSE
-		if (events.lNetworkEvents & FD_CLOSE)
-		{
-			// クライアントとの通信ソケットのクローズを検知
-			closeHandler(socketMap, workHandle);
-		}
-*/
+		// クライアントから新規接続を検知
+		acceptHandler(socketMap, mainHandle);
 	}
 
 	// ソケットとイベントHANDLEをクローズ
