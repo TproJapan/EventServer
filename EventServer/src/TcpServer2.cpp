@@ -22,6 +22,7 @@ void deleteConnection(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
 ///////////////////////////////////////////////////////////////////////////////
 int server_status = 0;//サーバーステータス(0:起動, 1:シャットダウン)
 bool main_thread_flag = true;
+std::map<HANDLE, SOCKET> socketMap;
 HANDLE	hMutex; //ミューテックスのハンドル
 
 #define CLIENT_MAX	32					// 同時接続可能クライアント数
@@ -31,29 +32,38 @@ HANDLE	hMutex; //ミューテックスのハンドル
 //引数あり、クラスでの関数オブジェクト
 ///////////////////////////////////////////////////////////////////////////////
 class ConnectClient {
-	std::map<HANDLE, SOCKET> _socketMap;
-	HANDLE _tmpEvent;
+	SOCKET _socket;
 public:
-	ConnectClient(std::map<HANDLE, SOCKET>& socketMap, HANDLE& tmpEvent) {
-		_socketMap = socketMap;
-		_tmpEvent = tmpEvent;
+	ConnectClient(SOCKET& tmpsocket) {
+		_socket = tmpsocket;
 	};
 	~ConnectClient() {
 	};
 public:
 	void operator()() {
+		HANDLE tmpEvent = WSACreateEvent();
+
+		//socketとイベント変数を、どの観点のイベントで反応させるかを紐づけ
+		int nRet = WSAEventSelect(_socket, tmpEvent, FD_READ | FD_CLOSE);
+		if (nRet == SOCKET_ERROR) {
+			printf("WSAEventSelect error. (%ld)\n", WSAGetLastError());
+			return;
+		}
+
+		socketMap[tmpEvent] = _socket;
+
+		//イベントを配列で管理
+		const int workierEventNum = 1;
+		HANDLE workerEventList[workierEventNum];
+		workerEventList[0] = tmpEvent;
+
 		while (1) {
-			WaitForSingleObject(hMutex, INFINITE); //mutex 間は他のスレッドから変数を変更できない
+			WaitForSingleObject(hMutex, INFINITE); //mutex間は他のスレッドから変数を変更できない
 			if (!main_thread_flag) {
 				ReleaseMutex(hMutex);
 				break;
 			}
 			ReleaseMutex(hMutex);
-
-			//イベントを配列で管理
-			const int workierEventNum = 1;
-			HANDLE workerEventList[workierEventNum];
-			workerEventList[0] = _tmpEvent;
 
 			printf("書き込みを待っています.\n");
 			DWORD worker_dwTimeout = TIMEOUT_MSEC;
@@ -62,7 +72,7 @@ public:
 			int worker_nRet = WSAWaitForMultipleEvents(workierEventNum, workerEventList, FALSE, worker_dwTimeout, FALSE);
 			if (worker_nRet == WSA_WAIT_FAILED)
 			{
-				printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+				printf("WSAWaitForMultipleEvents wait error. (%ld)\n", WSAGetLastError());
 				break;
 			}
 
@@ -76,12 +86,9 @@ public:
 			// イベントを検知したHANDLE
 			HANDLE workerHandle = workerEventList[worker_nRet];
 
-			// イベントを検知したHANDLEと関連付けしているソケット
-			SOCKET workerSocket = _socketMap[workerHandle];
-
 			//イベント調査
 			WSANETWORKEVENTS events;
-			if (WSAEnumNetworkEvents(workerSocket, workerHandle, &events) == SOCKET_ERROR)
+			if (WSAEnumNetworkEvents(_socket, workerHandle, &events) == SOCKET_ERROR)
 			{
 				printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
 				break;
@@ -91,18 +98,18 @@ public:
 			if (events.lNetworkEvents & FD_READ)
 			{
 				// クライアントとの通信ソケットにデータが到着した
-				recvHandler(_socketMap, workerHandle);
+				recvHandler(socketMap, workerHandle);
 			}
 
 			//CLOSE
 			if (events.lNetworkEvents & FD_CLOSE)
 			{
 				// クライアントとの通信ソケットのクローズを検知
-				closeHandler(_socketMap, workerHandle);
+				closeHandler(socketMap, workerHandle);
 			}
 		}
 
-		deleteConnection(_socketMap, _tmpEvent);
+		deleteConnection(socketMap, tmpEvent);
 		printf("Finished Thead\n");
 	}
 };
@@ -192,7 +199,6 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	std::map<HANDLE, SOCKET> socketMap;
 	socketMap[hEvent] = srcSocket;//listenソケットとイベントを結び付ける
 
 	hMutex = CreateMutex(NULL, FALSE, NULL);	//ミューテックス生成
@@ -224,8 +230,21 @@ int main(int argc, char* argv[])
 		// イベントを検知したHANDLE
 		HANDLE mainHandle = eventList[nRet];//これはhEventの事
 
-		// クライアントから新規接続を検知
-		acceptHandler(socketMap, mainHandle);
+
+		//イベント調査&イベントハンドルのリセット。これを発行しないとイベントリセットされないので常にイベントが発生している事になる
+		WSANETWORKEVENTS mainEvents;
+		if (WSAEnumNetworkEvents(srcSocket, mainHandle, &mainEvents) == SOCKET_ERROR)
+		{
+			printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+			break;
+		}
+
+		//Acceptフラグを見ておく
+		if (mainEvents.lNetworkEvents & FD_ACCEPT)
+		{
+			// クライアントから新規接続を検知
+			acceptHandler(socketMap, mainHandle);
+		}
 	}
 
 	// ソケットとイベントHANDLEをクローズ
@@ -269,19 +288,8 @@ bool acceptHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 		return false;
 	}
 
-	HANDLE tmpEvent = WSACreateEvent();
-
-	//socketとイベント変数を、どの観点のイベントで反応させるかを紐づけ
-	int nRet = WSAEventSelect(newSock, tmpEvent, FD_READ | FD_CLOSE);
-	if (nRet == SOCKET_ERROR) {
-		printf("WSAEventSelect error. (%ld)\n", WSAGetLastError());
-		return false;
-	}
-	
-	socketMap[tmpEvent] = newSock;
-
 	//Client対応専用スレッドへ
-	std::thread th{ ConnectClient(socketMap, tmpEvent) };
+	std::thread th{ ConnectClient(newSock) };
 	th.detach();
 
 	return true;
