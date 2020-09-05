@@ -16,15 +16,16 @@ bool closeHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
 bool recvHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
 bool acceptHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
 void deleteConnection(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
-
+int checkServerStatus();
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
 ///////////////////////////////////////////////////////////////////////////////
 int server_status = 0;//サーバーステータス(0:起動, 1:シャットダウン)
-bool main_thread_flag = true;
+//bool main_thread_flag = true;
 std::map<HANDLE, SOCKET> socketMap;
-HANDLE	hMutex; //ミューテックスのハンドル
-
+HANDLE	server_status_Mutex;
+HANDLE socketMap_Mutex;
+const char* PIPE_NAME = "\\\\%s\\pipe\\EventServer";
 #define CLIENT_MAX	32					// 同時接続可能クライアント数
 #define TIMEOUT_MSEC	3000			// タイムアウト時間(ミリ秒)
 
@@ -50,7 +51,9 @@ public:
 			return;
 		}
 
+		WaitForSingleObject(socketMap_Mutex, INFINITE); //mutex間は他のスレッドから変数を変更できない
 		socketMap[tmpEvent] = _socket;
+		ReleaseMutex(socketMap_Mutex);
 
 		//イベントを配列で管理
 		const int workierEventNum = 1;
@@ -58,12 +61,8 @@ public:
 		workerEventList[0] = tmpEvent;
 
 		while (1) {
-			WaitForSingleObject(hMutex, INFINITE); //mutex間は他のスレッドから変数を変更できない
-			if (!main_thread_flag) {
-				ReleaseMutex(hMutex);
-				break;
-			}
-			ReleaseMutex(hMutex);
+			//サーバーステータスチェック
+			if (checkServerStatus() == 1) break;
 
 			printf("書き込みを待っています.\n");
 			DWORD worker_dwTimeout = TIMEOUT_MSEC;
@@ -118,6 +117,8 @@ public:
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
+	int nRet = 0;
+
 	///////////////////////////////////
 	// コマンド引数の解析
 	///////////////////////////////////
@@ -126,21 +127,47 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	// パイプ名の組み立て
+	char pipeName[80];
+	wsprintf(pipeName, PIPE_NAME, ".");
+
+	// 名前付きパイプの作成
 	HANDLE hPipe;
-	hPipe = CreateNamedPipe("\\\\.\\pipe\\EventServer",
-							PIPE_ACCESS_INBOUND,
-							PIPE_TYPE_MESSAGE | PIPE_WAIT,
-							1, 0, 0, 150, (LPSECURITY_ATTRIBUTES)NULL);
+	hPipe = CreateNamedPipe(pipeName,		// パイプ名
+		PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,		// パイプのアクセスモード
+		PIPE_TYPE_MESSAGE,		// パイプの種類, 待機モード
+		1,		// インスタンスの最大数
+		0,		// 出力バッファのサイズ
+		0,		// 入力バッファのサイズ
+		150,	// タイムアウト値
+		(LPSECURITY_ATTRIBUTES)NULL);	// セキュリティ属性
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		printf("CreateNamedPipe error. (%ld)\n", GetLastError());
+		return -1;
+	}
+
+	// OVARLAPPED構造体の初期設定
+	OVERLAPPED overlappedConnect;
+	memset(&overlappedConnect, 0, sizeof(overlappedConnect));
+	HANDLE eventConnect = CreateEvent(0, FALSE, FALSE, 0);
+	if (eventConnect == INVALID_HANDLE_VALUE) {
+		printf("CreateNamedPipe error. (%ld)\n", GetLastError());
+		return -1;
+	}
+	overlappedConnect.hEvent = eventConnect;
+
+	// パイプクライアントからの接続を待つ。
+	// ただしOVERLAP指定なのでクライアントからの接続が無くても正常終了する
+	// (実際の接続確認はWSAWaitForMultipleEvents, GetOverlappedResultで行う)
+	nRet = ConnectNamedPipe(hPipe, &overlappedConnect);
+	if (nRet == -1) {
+		printf("ConnectNamedPipe error\n");
 		return -1;
 	}
 
 	// ポート番号の設定
 	int nPortNo;            // ポート番号
 	nPortNo = atol(argv[1]);
-
-	int nRet = 0;
 
 	// WINSOCKの初期化(これやらないとWinSock2.hの内容が使えない)
 	WSADATA	WsaData;
@@ -199,15 +226,22 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
+	socketMap_Mutex = CreateMutex(NULL, FALSE, NULL);
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
 	socketMap[hEvent] = srcSocket;//listenソケットとイベントを結び付ける
+	socketMap[eventConnect] = NULL;	//名前付きパイプに対する接続待ちハンドルには対応ソケットは無いのでNULL
+	ReleaseMutex(socketMap_Mutex);
 
-	hMutex = CreateMutex(NULL, FALSE, NULL);	//ミューテックス生成
+	server_status_Mutex = CreateMutex(NULL, FALSE, NULL);	//ミューテックス生成
 
-	while (main_thread_flag) {
+	while (1) {
+		if (checkServerStatus() == 1) break;
+
 		//イベントを配列で管理
-		const int mainEventNum = 1;
+		const int mainEventNum = 2;
 		HANDLE eventList[mainEventNum];
 		eventList[0] = hEvent;//listenイベントのみ
+		eventList[1] = eventConnect;//名前付きパイプ
 
 		printf("新規接続を待っています.\n");
 		//DWORD dwTimeout = WSA_INFINITE;	// 無限待ち
@@ -228,8 +262,72 @@ int main(int argc, char* argv[])
 		printf("WSAWaitForMultipleEvents nRet=%ld\n", nRet);
 
 		// イベントを検知したHANDLE
-		HANDLE mainHandle = eventList[nRet];//これはhEventの事
+		HANDLE mainHandle = eventList[nRet];
 
+		//ハンドル書き込み検出
+		if (mainHandle == eventConnect) {
+			printf("パイプに接続要求を受けました\n");
+
+			DWORD byteTransfer;
+			DWORD NumBytesRead;
+			DWORD dwRet = 0;
+			BOOL bRet;
+
+			bRet = GetOverlappedResult(mainHandle, &overlappedConnect, &byteTransfer, TRUE);
+			printf("GetOverlappedResult bRet = %ld\n", bRet);
+			if (bRet != TRUE) {
+				printf("GetOverlappedResult error\n");
+				//DisconnectNamedPipe(hPipe);
+				break;
+			}
+			ResetEvent(mainHandle);
+
+			// パイプクライアントからのメッセージを受信
+			char buf[1024];
+			bRet = ReadFile(hPipe,
+				buf,
+				sizeof(buf),
+				&NumBytesRead,
+				(LPOVERLAPPED)NULL);
+			if (bRet != TRUE) {
+				printf("ReadFile error\n");
+				//DisconnectNamedPipe(hPipe);
+				break;
+			}
+
+			printf("クライアントと接続しました:[%s]\n", buf);
+
+			// 受信メッセージが "stop" の場合はTcpServerを停止
+			if (strcmp(buf, "stop") == 0) {
+				WaitForSingleObject(server_status_Mutex, INFINITE);
+				server_status = 1;
+				ReleaseMutex(server_status_Mutex);
+				printf("サーバ停止要求を受信しました\n");
+			}
+
+			// パイプクライアントに応答メッセージを送信
+			DWORD NumBytesWritten;
+			strcpy(buf, "OK");
+			bRet = WriteFile(hPipe, buf, (DWORD)strlen(buf) + 1,
+				&NumBytesWritten, (LPOVERLAPPED)NULL);
+			if (bRet != TRUE) {
+				printf("WriteFile error\n");
+				//DisconnectNamedPipe(hPipe);
+				break;
+			}
+
+			// クライアントとのパイプを切断
+			DisconnectNamedPipe(hPipe);
+
+			// 新たなパイプクライアントからの接続を待つ
+			bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
+			if (bRet != TRUE) {
+				printf("ConnectNamedPipe error. (%ld)\n", GetLastError());
+				if (GetLastError() != ERROR_IO_PENDING) break;
+			}
+
+			continue;
+		}
 
 		//イベント調査&イベントハンドルのリセット。これを発行しないとイベントリセットされないので常にイベントが発生している事になる
 		WSANETWORKEVENTS mainEvents;
@@ -247,13 +345,18 @@ int main(int argc, char* argv[])
 		}
 	}
 
+	//パイプをクローズ
+	DisconnectNamedPipe(hPipe);
+
 	// ソケットとイベントHANDLEをクローズ
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
 	for (std::map<HANDLE, SOCKET>::iterator ite = socketMap.begin(); ite != socketMap.end(); ++ite)
 	{
 		CloseHandle(ite->first);
 		closesocket(ite->second);
 	}
 	socketMap.clear();
+	ReleaseMutex(socketMap_Mutex);
 
 	WSACleanup();
 
@@ -271,7 +374,9 @@ bool acceptHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 	struct sockaddr_in dstAddr;
 	addrlen = sizeof(dstAddr);
 
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
 	SOCKET sock = socketMap[hEvent];
+	ReleaseMutex(socketMap_Mutex);
 
 	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, &addrlen);
 	if (newSock == INVALID_SOCKET)
@@ -282,7 +387,10 @@ bool acceptHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 
 	printf("[%s]から接続を受けました. newSock=%d\n", inet_ntoa(dstAddr.sin_addr), newSock);
 
-	if (socketMap.size() == CLIENT_MAX) {
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
+	int socket_size = socketMap.size();
+	ReleaseMutex(socketMap_Mutex);
+	if (socket_size == CLIENT_MAX) {
 		printf("同時接続可能クライアント数を超過\n");
 		closesocket(newSock);
 		return false;
@@ -300,7 +408,9 @@ bool acceptHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 ///////////////////////////////////////////////////////////////////////////////
 bool recvHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 {
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
 	SOCKET sock = socketMap[hEvent];
+	ReleaseMutex(socketMap_Mutex);
 	printf("クライアント(%d)からデータを受信\n", sock);
 
 	char buf[1024];
@@ -337,7 +447,9 @@ bool recvHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 ///////////////////////////////////////////////////////////////////////////////
 bool closeHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 {
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
 	SOCKET sock = socketMap[hEvent];
+	ReleaseMutex(socketMap_Mutex);
 
 	printf("クライアント(%d)との接続が切れました\n", sock);
 	deleteConnection(socketMap, hEvent);
@@ -349,10 +461,19 @@ bool closeHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 ///////////////////////////////////////////////////////////////////////////////
 void deleteConnection(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 {
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
 	SOCKET sock = socketMap[hEvent];
 	closesocket(sock);
 	CloseHandle(hEvent);
 	socketMap.erase(hEvent);
+	ReleaseMutex(socketMap_Mutex);
 	return;
+}
+
+int checkServerStatus() {
+	WaitForSingleObject(server_status_Mutex, INFINITE); //mutex間は他のスレッドから変数を変更できない
+	int status = server_status;
+	ReleaseMutex(server_status_Mutex);
+	return status;
 }
 

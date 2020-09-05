@@ -14,7 +14,9 @@ Tcp or Udp Server/Clinet Project for my Studying C++
 
 # [停止方法]
 (1) サーバー
-    Ctrl + C
+    #cd \Project Root\EventServer\Debug
+    #Stop.exe stop
+    もしくは、Ctrl + C
 
 (2) クライアント
     「T子文字のアルファベットを入力してください」
