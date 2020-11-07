@@ -1,0 +1,156 @@
+///////////////////////////////////////////////////////////////////////////////
+// ソケットマップ管理クラス
+///////////////////////////////////////////////////////////////////////////////
+#include "CSocketMap.h"
+using namespace std;
+
+CSocketMap* CSocketMap::pInstance = NULL;
+
+
+///////////////////////////////////////////////////////////////////////////////
+// [機能]
+//  インスタンスの取得
+// [引数]
+//  なし
+// [戻り値]
+//  インスタンスのアドレス
+///////////////////////////////////////////////////////////////////////////////
+CSocketMap* CSocketMap::getInstance()
+{
+	if (pInstance == NULL) {
+		pInstance = new CSocketMap();
+	}
+	return pInstance;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// [機能]
+//  コンストラクタ
+// [引数]
+//  なし
+// [戻り値]
+//   なし
+///////////////////////////////////////////////////////////////////////////////
+CSocketMap::CSocketMap()
+{
+	return;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// [機能]
+//  デストラクタ
+// [引数]
+//  なし
+// [戻り値]
+//   なし
+///////////////////////////////////////////////////////////////////////////////
+CSocketMap::~CSocketMap()
+
+{
+	lock_guard<mutex> lk(m_mutex);
+	for (std::map<HANDLE, SOCKET>::iterator ite = m_socketMap.begin(); ite != m_socketMap.end(); ++ite)
+	{
+		CloseHandle(ite->first);
+		closesocket(ite->second);
+	}
+	m_socketMap.clear();
+	return;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// [機能]
+//  ソケットの登録
+// [引数]
+//  socket : 接続済みソケット
+//  handle : ソケットと関連付け済みのHANDLE
+// [戻り値]
+//   true : 正常終了
+//   false: 異常終了
+///////////////////////////////////////////////////////////////////////////////
+bool CSocketMap::addSocket(SOCKET socket, HANDLE handle)
+{
+	lock_guard<mutex> lk(m_mutex);
+	if (findSocket(handle)) {
+		// 登録済みのソケットなのでエラー
+		return false;
+	}
+	m_socketMap[handle] = socket;
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// [機能]
+//  ソケットの取得
+// [引数]
+//  handle : ソケットと関連付け済みのHANDLE
+// [戻り値]
+//   ソケット : 正常終了
+//   INVALID_SOCKET: 異常終了
+///////////////////////////////////////////////////////////////////////////////
+SOCKET CSocketMap::getSocket(HANDLE handle)
+{
+	lock_guard<mutex> lk(m_mutex);
+	if (!findSocket(handle)) {
+		// 未登録のソケットなのでエラー
+		return INVALID_SOCKET;
+	}
+	SOCKET socket = m_socketMap[handle];
+	return socket;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// [機能]
+//  ソケットの削除
+// [引数]
+//  handle : ソケットと関連付け済みのHANDLE
+// [戻り値]
+//   true : 正常終了
+//   false: 異常終了
+///////////////////////////////////////////////////////////////////////////////
+bool CSocketMap::deleteSocket(HANDLE handle)
+{
+	lock_guard<mutex> lk(m_mutex);
+	if (!findSocket(handle)) {
+		// 未登録のソケットなのでエラー
+		return false;
+	}
+	SOCKET socket = m_socketMap[handle];
+	closesocket(socket);
+	CloseHandle(handle);
+	m_socketMap.erase(handle);
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// [機能]
+//  ソケットの検索
+// [引数]
+//  handle : ソケットと関連付け済みのHANDLE
+// [戻り値]
+//   true : 正常終了
+//   false: 異常終了
+///////////////////////////////////////////////////////////////////////////////
+bool CSocketMap::findSocket(HANDLE handle)
+{
+	map<HANDLE, SOCKET>::iterator ite;
+	ite = m_socketMap.find(handle);
+	if (ite == m_socketMap.end()) {
+		return false;
+	}
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// [機能]
+//  登録済みソケット数の取得
+// [引数]
+//  なし
+// [戻り値]
+//   登録済みソケット数の取得
+///////////////////////////////////////////////////////////////////////////////
+int CSocketMap::getCount()
+{
+	lock_guard<mutex> lk(m_mutex);
+	int count = m_socketMap.size();
+	return count;
+}

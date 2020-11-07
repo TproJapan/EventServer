@@ -9,36 +9,25 @@
 #include <WinSock2.h>
 #include <map>
 #include <thread>
-#include "CSocketMap.h"
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <iostream>
-#include <string>
-#include <boost/format.hpp>
 ///////////////////////////////////////////////////////////////////////////////
 // プロトタイプ宣言
 ///////////////////////////////////////////////////////////////////////////////
-bool closeHandler(CSocketMap& socketMap, HANDLE& hEvent);
-bool recvHandler(CSocketMap& socketMap, HANDLE& hEvent);
-bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent);
-void deleteConnection(CSocketMap& socketMap, HANDLE& hEvent);
+bool closeHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
+bool recvHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
+bool acceptHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
+void deleteConnection(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent);
 int checkServerStatus();
-
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
 ///////////////////////////////////////////////////////////////////////////////
 int server_status = 0;//サーバーステータス(0:起動, 1:シャットダウン)
 //bool main_thread_flag = true;
+std::map<HANDLE, SOCKET> socketMap;
 HANDLE	server_status_Mutex;
 HANDLE socketMap_Mutex;
 const char* PIPE_NAME = "\\\\%s\\pipe\\EventServer";
 #define CLIENT_MAX	32					// 同時接続可能クライアント数
 #define TIMEOUT_MSEC	3000			// タイムアウト時間(ミリ秒)
-
-CSocketMap* pSocketMap;
-//CSocketMap& socketMap = *(pSocketMap);
 
 ///////////////////////////////////////////////////////////////////////////////
 //引数あり、クラスでの関数オブジェクト
@@ -62,7 +51,9 @@ public:
 			return;
 		}
 
-		pSocketMap->addSocket(_socket, tmpEvent);
+		WaitForSingleObject(socketMap_Mutex, INFINITE); //mutex間は他のスレッドから変数を変更できない
+		socketMap[tmpEvent] = _socket;
+		ReleaseMutex(socketMap_Mutex);
 
 		//イベントを配列で管理
 		const int workierEventNum = 1;
@@ -106,18 +97,18 @@ public:
 			if (events.lNetworkEvents & FD_READ)
 			{
 				// クライアントとの通信ソケットにデータが到着した
-				recvHandler(*pSocketMap, workerHandle);
+				recvHandler(socketMap, workerHandle);
 			}
 
 			//CLOSE
 			if (events.lNetworkEvents & FD_CLOSE)
 			{
 				// クライアントとの通信ソケットのクローズを検知
-				closeHandler(*pSocketMap, workerHandle);
+				closeHandler(socketMap, workerHandle);
 			}
 		}
 
-		deleteConnection(*pSocketMap, tmpEvent);
+		deleteConnection(socketMap, tmpEvent);
 		printf("Finished Thead\n");
 	}
 };
@@ -135,8 +126,6 @@ int main(int argc, char* argv[])
 		printf("TcpServer portNo\n");
 		return -1;
 	}
-
-	pSocketMap = CSocketMap::getInstance();
 
 	// パイプ名の組み立て
 	char pipeName[80];
@@ -237,8 +226,15 @@ int main(int argc, char* argv[])
 		return -1;
 	}
 
-	pSocketMap->addSocket(srcSocket, hEvent);//listenソケットとイベントを結び付ける
-	pSocketMap->addSocket(NULL,eventConnect);//名前付きパイプに対する接続待ちハンドルには対応ソケットは無いのでNULL
+	socketMap_Mutex = CreateMutex(NULL, FALSE, NULL);
+	if (socketMap_Mutex == NULL) {
+		printf("CreateMutex error. (%ld)\n", GetLastError());
+		return -1;
+	}
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
+	socketMap[hEvent] = srcSocket;//listenソケットとイベントを結び付ける
+	socketMap[eventConnect] = NULL;	//名前付きパイプに対する接続待ちハンドルには対応ソケットは無いのでNULL
+	ReleaseMutex(socketMap_Mutex);
 
 	server_status_Mutex = CreateMutex(NULL, FALSE, NULL);	//ミューテックス生成
 
@@ -349,12 +345,22 @@ int main(int argc, char* argv[])
 		if (mainEvents.lNetworkEvents & FD_ACCEPT)
 		{
 			// クライアントから新規接続を検知
-			acceptHandler(*pSocketMap, mainHandle);
+			acceptHandler(socketMap, mainHandle);
 		}
 	}
 
 	//パイプをクローズ
 	DisconnectNamedPipe(hPipe);
+
+	// ソケットとイベントHANDLEをクローズ
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
+	for (std::map<HANDLE, SOCKET>::iterator ite = socketMap.begin(); ite != socketMap.end(); ++ite)
+	{
+		CloseHandle(ite->first);
+		closesocket(ite->second);
+	}
+	socketMap.clear();
+	ReleaseMutex(socketMap_Mutex);
 
 	WSACleanup();
 
@@ -365,14 +371,17 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントから新規接続受付時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////
-bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent)
+bool acceptHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 {
 	printf("クライアント接続要求を受け付けました\n");
 	int	addrlen;
 	struct sockaddr_in dstAddr;
 	addrlen = sizeof(dstAddr);
 
-	SOCKET sock = socketMap.getSocket(hEvent);
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
+	SOCKET sock = socketMap[hEvent];
+	ReleaseMutex(socketMap_Mutex);
+
 	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, &addrlen);
 	if (newSock == INVALID_SOCKET)
 	{
@@ -380,10 +389,11 @@ bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent)
 		return true;
 	}
 
-	printf("[%s]から接続を受けました. newSock=%d\n", inet_ntoa(dstAddr.sin_addr), newSock);
+	printf("[%s]から接続を受けました. newSock=%ld\n", inet_ntoa(dstAddr.sin_addr), newSock);
 
 	WaitForSingleObject(socketMap_Mutex, INFINITE);
-	int socket_size = socketMap.getCount();
+	int socket_size = socketMap.size();
+	ReleaseMutex(socketMap_Mutex);
 	if (socket_size == CLIENT_MAX) {
 		printf("同時接続可能クライアント数を超過\n");
 		closesocket(newSock);
@@ -400,9 +410,11 @@ bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent)
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントからのデータ受付時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////
-bool recvHandler(CSocketMap& socketMap, HANDLE& hEvent)
+bool recvHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 {
-	SOCKET sock = socketMap.getSocket(hEvent);
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
+	SOCKET sock = socketMap[hEvent];
+	ReleaseMutex(socketMap_Mutex);
 	printf("クライアント(%ld)からデータを受信\n", sock);
 
 	char buf[1024];
@@ -437,9 +449,11 @@ bool recvHandler(CSocketMap& socketMap, HANDLE& hEvent)
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントとの通信ソケットの切断検知時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////
-bool closeHandler(CSocketMap& socketMap, HANDLE& hEvent)
+bool closeHandler(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 {
-	SOCKET sock = socketMap.getSocket(hEvent);
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
+	SOCKET sock = socketMap[hEvent];
+	ReleaseMutex(socketMap_Mutex);
 
 	printf("クライアント(%d)との接続が切れました\n", sock);
 	deleteConnection(socketMap, hEvent);
@@ -449,9 +463,14 @@ bool closeHandler(CSocketMap& socketMap, HANDLE& hEvent)
 ///////////////////////////////////////////////////////////////////////////////
 // 指定されたイベントハンドルとソケットクローズ、mapからの削除
 ///////////////////////////////////////////////////////////////////////////////
-void deleteConnection(CSocketMap& socketMap, HANDLE& hEvent)
+void deleteConnection(std::map<HANDLE, SOCKET>& socketMap, HANDLE& hEvent)
 {
-	socketMap.deleteSocket(hEvent);
+	WaitForSingleObject(socketMap_Mutex, INFINITE);
+	SOCKET sock = socketMap[hEvent];
+	closesocket(sock);
+	CloseHandle(hEvent);
+	socketMap.erase(hEvent);
+	ReleaseMutex(socketMap_Mutex);
 	return;
 }
 
