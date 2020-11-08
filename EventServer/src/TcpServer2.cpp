@@ -10,6 +10,7 @@
 #include <map>
 #include <thread>
 #include "CSocketMap.h"
+#include "thread_pool.h"
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -22,7 +23,7 @@
 ///////////////////////////////////////////////////////////////////////////////
 bool closeHandler(CSocketMap& socketMap, HANDLE& hEvent);
 bool recvHandler(CSocketMap& socketMap, HANDLE& hEvent);
-bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent);
+bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent, thread_pool& tp);
 void deleteConnection(CSocketMap& socketMap, HANDLE& hEvent);
 int checkServerStatus();
 
@@ -52,7 +53,7 @@ public:
 	~ConnectClient() {
 	};
 public:
-	void operator()() {
+	void func() {
 		HANDLE tmpEvent = WSACreateEvent();
 
 		//socketとイベント変数を、どの観点のイベントで反応させるかを紐づけ
@@ -135,6 +136,10 @@ int main(int argc, char* argv[])
 		printf("TcpServer portNo\n");
 		return -1;
 	}
+
+	//スレッドプール作成
+	boost::asio::io_service io_service;
+	thread_pool tp(io_service, 3);
 
 	pSocketMap = CSocketMap::getInstance();
 
@@ -349,9 +354,12 @@ int main(int argc, char* argv[])
 		if (mainEvents.lNetworkEvents & FD_ACCEPT)
 		{
 			// クライアントから新規接続を検知
-			acceptHandler(*pSocketMap, mainHandle);
+			acceptHandler(*pSocketMap, mainHandle, tp);
 		}
 	}
+
+	//メインスレッドはサブスレッド用に終了flagを立てる&定期的にスレッド数をカウントしにいく
+	//サブスレッドはselectの頭で終了フラグを見て、カウント減算して終了する
 
 	//パイプをクローズ
 	DisconnectNamedPipe(hPipe);
@@ -365,7 +373,7 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントから新規接続受付時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////
-bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent)
+bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent, thread_pool& tp)
 {
 	printf("クライアント接続要求を受け付けました\n");
 	int	addrlen;
@@ -391,8 +399,11 @@ bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent)
 	}
 
 	//Client対応専用スレッドへ
-	std::thread th{ ConnectClient(newSock) };
-	th.detach();
+	//std::thread th{ ConnectClient(newSock) };
+	//th.detach();
+
+	ConnectClient h(newSock);
+	tp.post(boost::bind(&ConnectClient::func, &h));
 
 	return true;
 }

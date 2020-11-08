@@ -26,5 +26,8 @@
     <ClInclude Include="..\src\CSocketMap.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="..\src\thread_pool.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
