@@ -1,8 +1,8 @@
 ﻿///////////////////////////////////////////////////////////////////////////////
-// [EventServer2]
-// WinSockを使用したTCPサーバー。
-// シングルスレッドで最大32クライアントと同時接続を行う。
+// WinSockを使用したTCPサーバー
+// Boost.Asioでスレッドプール
 ///////////////////////////////////////////////////////////////////////////////
+#pragma once
 #include <stdio.h>
 #pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
@@ -18,113 +18,10 @@
 #include <iostream>
 #include <string>
 #include <boost/format.hpp>
-///////////////////////////////////////////////////////////////////////////////
-// プロトタイプ宣言
-///////////////////////////////////////////////////////////////////////////////
-bool closeHandler(CSocketMap& socketMap, HANDLE& hEvent);
-bool recvHandler(CSocketMap& socketMap, HANDLE& hEvent);
-bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent, thread_pool& tp);
-void deleteConnection(CSocketMap& socketMap, HANDLE& hEvent);
-int checkServerStatus();
+#include "CommonVariables.h"
+#include "CommonFunc.h"
+#include "ConnectClient.h"
 
-///////////////////////////////////////////////////////////////////////////////
-// 共用変数
-///////////////////////////////////////////////////////////////////////////////
-int server_status = 0;//サーバーステータス(0:起動, 1:シャットダウン)
-//bool main_thread_flag = true;
-HANDLE	server_status_Mutex;
-HANDLE socketMap_Mutex;
-const char* PIPE_NAME = "\\\\%s\\pipe\\EventServer";
-#define CLIENT_MAX	32					// 同時接続可能クライアント数
-#define TIMEOUT_MSEC	3000			// タイムアウト時間(ミリ秒)
-
-CSocketMap* pSocketMap;
-//CSocketMap& socketMap = *(pSocketMap);
-
-///////////////////////////////////////////////////////////////////////////////
-//引数あり、クラスでの関数オブジェクト
-///////////////////////////////////////////////////////////////////////////////
-class ConnectClient {
-	SOCKET _socket;
-public:
-	ConnectClient(SOCKET& tmpsocket) {
-		_socket = tmpsocket;
-	};
-	~ConnectClient() {
-	};
-public:
-	void func() {
-		HANDLE tmpEvent = WSACreateEvent();
-
-		//socketとイベント変数を、どの観点のイベントで反応させるかを紐づけ
-		int nRet = WSAEventSelect(_socket, tmpEvent, FD_READ | FD_CLOSE);
-		if (nRet == SOCKET_ERROR) {
-			printf("WSAEventSelect error. (%ld)\n", WSAGetLastError());
-			return;
-		}
-
-		pSocketMap->addSocket(_socket, tmpEvent);
-
-		//イベントを配列で管理
-		const int workierEventNum = 1;
-		HANDLE workerEventList[workierEventNum];
-		workerEventList[0] = tmpEvent;
-
-		while (1) {
-			//サーバーステータスチェック
-			if (checkServerStatus() == 1) break;
-
-			printf("書き込みを待っています.\n");
-			DWORD worker_dwTimeout = TIMEOUT_MSEC;
-
-			//イベント多重待ち
-			int worker_nRet = WSAWaitForMultipleEvents(workierEventNum, workerEventList, FALSE, worker_dwTimeout, FALSE);
-			if (worker_nRet == WSA_WAIT_FAILED)
-			{
-				printf("WSAWaitForMultipleEvents wait error. (%ld)\n", WSAGetLastError());
-				break;
-			}
-
-			if (worker_nRet == WSA_WAIT_TIMEOUT) {
-				printf("タイムアウト発生!!!\n");
-				continue;
-			}
-
-			printf("WSAWaitForMultipleEvents nRet=%ld\n", worker_nRet);
-
-			// イベントを検知したHANDLE
-			HANDLE workerHandle = workerEventList[worker_nRet];
-
-			//イベント調査
-			WSANETWORKEVENTS events;
-			if (WSAEnumNetworkEvents(_socket, workerHandle, &events) == SOCKET_ERROR)
-			{
-				printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
-				break;
-			}
-
-			//READ
-			if (events.lNetworkEvents & FD_READ)
-			{
-				// クライアントとの通信ソケットにデータが到着した
-				recvHandler(*pSocketMap, workerHandle);
-			}
-
-			//CLOSE
-			if (events.lNetworkEvents & FD_CLOSE)
-			{
-				// クライアントとの通信ソケットのクローズを検知
-				closeHandler(*pSocketMap, workerHandle);
-			}
-		}
-
-		deleteConnection(*pSocketMap, tmpEvent);
-		printf("Finished Thead\n");
-	}
-};
-///////////////////////////////////////////////////////////////////////////////
-// main
-///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
 	int nRet = 0;
@@ -369,107 +266,3 @@ int main(int argc, char* argv[])
 	printf("正常終了します\n");
 	return(0);
 }
-
-///////////////////////////////////////////////////////////////////////////////
-// クライアントから新規接続受付時のハンドラ
-///////////////////////////////////////////////////////////////////////////////
-bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent, thread_pool& tp)
-{
-	printf("クライアント接続要求を受け付けました\n");
-	int	addrlen;
-	struct sockaddr_in dstAddr;
-	addrlen = sizeof(dstAddr);
-
-	SOCKET sock = socketMap.getSocket(hEvent);
-	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, &addrlen);
-	if (newSock == INVALID_SOCKET)
-	{
-		printf("accept error. (%ld)\n", WSAGetLastError());
-		return true;
-	}
-
-	printf("[%s]から接続を受けました. newSock=%d\n", inet_ntoa(dstAddr.sin_addr), newSock);
-
-	WaitForSingleObject(socketMap_Mutex, INFINITE);
-	int socket_size = socketMap.getCount();
-	if (socket_size == CLIENT_MAX) {
-		printf("同時接続可能クライアント数を超過\n");
-		closesocket(newSock);
-		return false;
-	}
-
-	//Client対応専用スレッドへ
-	//std::thread th{ ConnectClient(newSock) };
-	//th.detach();
-
-	ConnectClient h(newSock);
-	tp.post(boost::bind(&ConnectClient::func, &h));
-
-	return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// クライアントからのデータ受付時のハンドラ
-///////////////////////////////////////////////////////////////////////////////
-bool recvHandler(CSocketMap& socketMap, HANDLE& hEvent)
-{
-	SOCKET sock = socketMap.getSocket(hEvent);
-	printf("クライアント(%ld)からデータを受信\n", sock);
-
-	char buf[1024];
-	int stSize = recv(sock, buf, sizeof(buf), 0);
-	if (stSize <= 0) {
-		printf("recv error.\n");
-		printf("クライアント(%ld)との接続が切れました\n", sock);
-		deleteConnection(socketMap, hEvent);
-		return true;
-	}
-
-	printf("変換前:[%s] ==> ", buf);
-	for (int i = 0; i < (int)stSize; i++) { // bufの中の小文字を大文字に変換
-		if (isalpha(buf[i])) {
-			buf[i] = toupper(buf[i]);
-		}
-	}
-
-	// クライアントに返信
-	stSize = send(sock, buf, strlen(buf) + 1, 0);
-	if (stSize != strlen(buf) + 1) {
-		printf("send error.\n");
-		printf("クライアントとの接続が切れました\n");
-		deleteConnection(socketMap, hEvent);
-		return true;
-	}
-
-	printf("変換後:[%s] \n", buf);
-	return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// クライアントとの通信ソケットの切断検知時のハンドラ
-///////////////////////////////////////////////////////////////////////////////
-bool closeHandler(CSocketMap& socketMap, HANDLE& hEvent)
-{
-	SOCKET sock = socketMap.getSocket(hEvent);
-
-	printf("クライアント(%d)との接続が切れました\n", sock);
-	deleteConnection(socketMap, hEvent);
-	return true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// 指定されたイベントハンドルとソケットクローズ、mapからの削除
-///////////////////////////////////////////////////////////////////////////////
-void deleteConnection(CSocketMap& socketMap, HANDLE& hEvent)
-{
-	socketMap.deleteSocket(hEvent);
-	return;
-}
-
-int checkServerStatus() {
-	WaitForSingleObject(server_status_Mutex, INFINITE); //mutex間は他のスレッドから変数を変更できない
-	int status = server_status;
-	ReleaseMutex(server_status_Mutex);
-	return status;
-}
-

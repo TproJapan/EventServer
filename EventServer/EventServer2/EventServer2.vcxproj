@@ -23,6 +23,9 @@
     <ClCompile Include="..\src\TcpServer2.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\CommonFunc.h" />
+    <ClInclude Include="..\src\CommonVariables.h" />
+    <ClInclude Include="..\src\ConnectClient.h" />
     <ClInclude Include="..\src\CSocketMap.h" />
     <ClInclude Include="..\src\thread_pool.h" />
   </ItemGroup>
@@ -96,7 +99,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74;$(SolutinDir)include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -113,7 +116,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74;$(SolutinDir)include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -129,7 +132,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74;$(SolutinDir)include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -145,7 +148,7 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74;$(SolutinDir)include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
