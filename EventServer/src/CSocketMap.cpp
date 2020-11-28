@@ -115,7 +115,7 @@ bool CSocketMap::deleteSocket(HANDLE handle)
 		return false;
 	}
 	SOCKET socket = m_socketMap[handle];
-	closesocket(socket);
+	if(socket != NULL) closesocket(socket);//2020.11.28’Ç‰Á
 	CloseHandle(handle);
 	m_socketMap.erase(handle);
 	return true;
@@ -151,6 +151,6 @@ bool CSocketMap::findSocket(HANDLE handle)
 int CSocketMap::getCount()
 {
 	lock_guard<mutex> lk(m_mutex);
-	int count = m_socketMap.size();
+	int count = (int)m_socketMap.size();
 	return count;
 }

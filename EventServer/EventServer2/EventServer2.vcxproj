@@ -19,6 +19,8 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\CommonFunc.cpp" />
+    <ClCompile Include="..\src\ConnectClient.cpp" />
     <ClCompile Include="..\src\CSocketMap.cpp" />
     <ClCompile Include="..\src\TcpServer2.cpp" />
   </ItemGroup>

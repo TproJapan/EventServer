@@ -2,10 +2,12 @@
 // WinSockを使用したTCPサーバー
 // Boost.Asioでスレッドプール
 ///////////////////////////////////////////////////////////////////////////////
-#pragma once
-#include <stdio.h>
+//#pragma once
+//#include <stdio.h>
 #pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
+
+/*
 #include <WinSock2.h>
 #include <map>
 #include <thread>
@@ -21,7 +23,28 @@
 #include "CommonVariables.h"
 #include "CommonFunc.h"
 #include "ConnectClient.h"
+*/
 
+
+#include <boost/asio.hpp>
+#include "thread_pool.h"
+
+/*
+#include <boost/thread.hpp>
+#include <boost/bind.hpp>
+#include <boost/shared_ptr.hpp>
+*/
+//#include <WinSock2.h>
+
+//#include <windows.h>
+#include "ConnectClient.h"
+#include "CommonFunc.h"
+#define __MAIN_SRC__
+#include "CommonVariables.h"
+
+///////////////////////////////////////////////////////////////////////////////
+// メイン処理
+///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
 	int nRet = 0;
@@ -36,7 +59,7 @@ int main(int argc, char* argv[])
 
 	//スレッドプール作成
 	boost::asio::io_service io_service;
-	thread_pool tp(io_service, 3);
+	thread_pool tp(io_service, CLIENT_MAX - 2);
 
 	pSocketMap = CSocketMap::getInstance();
 
@@ -231,9 +254,9 @@ int main(int argc, char* argv[])
 
 			// 新たなパイプクライアントからの接続を待つ
 			bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
-			if (bRet != TRUE) {
+			if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {
 				printf("ConnectNamedPipe error. (%ld)\n", GetLastError());
-				if (GetLastError() != ERROR_IO_PENDING) break;
+				break;
 			}
 
 			continue;
@@ -255,14 +278,47 @@ int main(int argc, char* argv[])
 		}
 	}
 
-	//メインスレッドはサブスレッド用に終了flagを立てる&定期的にスレッド数をカウントしにいく
-	//サブスレッドはselectの頭で終了フラグを見て、カウント減算して終了する
+	///////////////////////////////////////////////////////////////////////
+	//定期的にワーカースレッド数(ハンドラ数)をカウントしにいく
+	//pSocketMap->getCount() = パイプ用(1個) + listen用(1個) + クライアント応対用
+	///////////////////////////////////////////////////////////////////////
 
-	//パイプをクローズ
+	//パイプと、それに関連つけたイベントクローズ&Mapから削除
 	DisconnectNamedPipe(hPipe);
+	pSocketMap->deleteSocket(eventConnect);//2020.11.29追加
 
+	//listenソケットと、それに関連づけたイベントクローズ&Mapから削除
+	pSocketMap->deleteSocket(hEvent);//2020.11.29追加
+
+	//スレッド数カウント一定回数定期実行
+	int count = 10;
+	int duration = 3000;
+	int worker_threadNum;
+
+	while (1) {
+		worker_threadNum = pSocketMap->getCount();
+		if (worker_threadNum == 0) {
+			printf("ワーカースレッド残0。終了に向かいます\n");
+			break;
+		}
+
+		count--;
+
+		if (count <= 0) {
+			printf("タイムアップ。ワーカースレッド残%d。強制終了します\n", worker_threadNum);
+			break;
+		}
+
+		Sleep(duration);
+	}
+
+	//この記述が自信ない
+	//ConnectClient.cpp65行目をコメントアウトし、さらにこれをコメントアウトするとメインスレッド終了後もワーカースレッドが終了せず動き続ける...
+	pSocketMap->~CSocketMap();//SocketMapインスタンス破棄処理
+
+	//Winsock終了処理
 	WSACleanup();
 
-	printf("正常終了します\n");
+	printf("終了しました\n");
 	return(0);
 }
