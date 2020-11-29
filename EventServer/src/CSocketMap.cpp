@@ -6,7 +6,6 @@ using namespace std;
 
 CSocketMap* CSocketMap::pInstance = NULL;
 
-
 ///////////////////////////////////////////////////////////////////////////////
 // [機能]
 //  インスタンスの取得
@@ -51,7 +50,7 @@ CSocketMap::~CSocketMap()
 	for (std::map<HANDLE, SOCKET>::iterator ite = m_socketMap.begin(); ite != m_socketMap.end(); ++ite)
 	{
 		CloseHandle(ite->first);
-		closesocket(ite->second);
+		if(ite->second != NULL) closesocket(ite->second);
 	}
 	m_socketMap.clear();
 	return;
@@ -115,7 +114,7 @@ bool CSocketMap::deleteSocket(HANDLE handle)
 		return false;
 	}
 	SOCKET socket = m_socketMap[handle];
-	if(socket != NULL) closesocket(socket);//2020.11.28追加
+	if(socket != NULL) closesocket(socket);
 	CloseHandle(handle);
 	m_socketMap.erase(handle);
 	return true;

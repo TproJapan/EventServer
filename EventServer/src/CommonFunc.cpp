@@ -1,38 +1,14 @@
-//#pragma once
-/*
-#include <stdio.h>
-//#pragma comment(lib, "ws2_32.lib")
-#pragma warning(disable:4996)
 #include <WinSock2.h>
-#include <map>
-#include <thread>
-#include "CSocketMap.h"
-#include "thread_pool.h"
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <iostream>
-#include <string>
-#include <boost/format.hpp>
-#include "CommonVariables.h"
-#include "ConnectClient.h"
-*/
-
-#include <WinSock2.h>
-//#pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
 #include "CommonFunc.h"
 #include "ConnectClient.h"
 #include "CommonVariables.h"
 #include <boost/bind.hpp>
 
-
 int checkServerStatus()
 {
-	WaitForSingleObject(server_status_Mutex, INFINITE); //mutex間は他のスレッドから変数を変更できない
+	std::lock_guard<std::mutex> lk(server_status_Mutex);
 	int status = server_status;
-	ReleaseMutex(server_status_Mutex);
 	return status;
 }
 
@@ -56,16 +32,15 @@ bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent, thread_pool& tp)
 
 	printf("[%s]から接続を受けました. newSock=%d\n", inet_ntoa(dstAddr.sin_addr), newSock);
 	
-	//以下コメントアウトした場合、3つめクライアント接続要求時にプールに空きがなくメインスレッドが固まる
-	/*
-	//WaitForSingleObject(socketMap_Mutex, INFINITE);
 	int socket_size = socketMap.getCount();
-	if (socket_size == CLIENT_MAX) {
+	printf(" socketMap.getCount():%d\n", socket_size);
+	if (socket_size == CLIENT_MAX + 2) //2は名前付きパイプ, listenソケット
+	{
 		printf("同時接続可能クライアント数を超過\n");
 		closesocket(newSock);
 		return false;
 	}
-	*/
+
 	//プールスレッドにバインド
 	ConnectClient* h = new ConnectClient(newSock, pSocketMap);
 	tp.post(boost::bind(&ConnectClient::func, h));

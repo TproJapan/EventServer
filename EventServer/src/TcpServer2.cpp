@@ -2,41 +2,10 @@
 // WinSockを使用したTCPサーバー
 // Boost.Asioでスレッドプール
 ///////////////////////////////////////////////////////////////////////////////
-//#pragma once
-//#include <stdio.h>
 #pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
-
-/*
-#include <WinSock2.h>
-#include <map>
-#include <thread>
-#include "CSocketMap.h"
-#include "thread_pool.h"
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <iostream>
-#include <string>
-#include <boost/format.hpp>
-#include "CommonVariables.h"
-#include "CommonFunc.h"
-#include "ConnectClient.h"
-*/
-
-
 #include <boost/asio.hpp>
 #include "thread_pool.h"
-
-/*
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-*/
-//#include <WinSock2.h>
-
-//#include <windows.h>
 #include "ConnectClient.h"
 #include "CommonFunc.h"
 #define __MAIN_SRC__
@@ -59,7 +28,7 @@ int main(int argc, char* argv[])
 
 	//スレッドプール作成
 	boost::asio::io_service io_service;
-	thread_pool tp(io_service, CLIENT_MAX - 2);
+	thread_pool tp(io_service, CLIENT_MAX);
 
 	pSocketMap = CSocketMap::getInstance();
 
@@ -165,8 +134,6 @@ int main(int argc, char* argv[])
 	pSocketMap->addSocket(srcSocket, hEvent);//listenソケットとイベントを結び付ける
 	pSocketMap->addSocket(NULL,eventConnect);//名前付きパイプに対する接続待ちハンドルには対応ソケットは無いのでNULL
 
-	server_status_Mutex = CreateMutex(NULL, FALSE, NULL);	//ミューテックス生成
-
 	while (1) {
 		if (checkServerStatus() == 1) break;
 
@@ -232,9 +199,8 @@ int main(int argc, char* argv[])
 
 			// 受信メッセージが "stop" の場合はTcpServerを停止
 			if (strcmp(buf, "stop") == 0) {
-				WaitForSingleObject(server_status_Mutex, INFINITE);
+				std::lock_guard<std::mutex> lk(server_status_Mutex);
 				server_status = 1;
-				ReleaseMutex(server_status_Mutex);
 				printf("サーバ停止要求を受信しました\n");
 			}
 
@@ -285,14 +251,14 @@ int main(int argc, char* argv[])
 
 	//パイプと、それに関連つけたイベントクローズ&Mapから削除
 	DisconnectNamedPipe(hPipe);
-	pSocketMap->deleteSocket(eventConnect);//2020.11.29追加
+	pSocketMap->deleteSocket(eventConnect);
 
 	//listenソケットと、それに関連づけたイベントクローズ&Mapから削除
-	pSocketMap->deleteSocket(hEvent);//2020.11.29追加
+	pSocketMap->deleteSocket(hEvent);
 
 	//スレッド数カウント一定回数定期実行
 	int count = 10;
-	int duration = 3000;
+	int duration = 2000;
 	int worker_threadNum;
 
 	while (1) {
@@ -306,15 +272,15 @@ int main(int argc, char* argv[])
 
 		if (count <= 0) {
 			printf("タイムアップ。ワーカースレッド残%d。強制終了します\n", worker_threadNum);
+			tp.terminateAllThreads();
 			break;
 		}
 
 		Sleep(duration);
 	}
-
-	//この記述が自信ない
-	//ConnectClient.cpp65行目をコメントアウトし、さらにこれをコメントアウトするとメインスレッド終了後もワーカースレッドが終了せず動き続ける...
-	pSocketMap->~CSocketMap();//SocketMapインスタンス破棄処理
+	
+	//ソケットマップ開放
+	delete pSocketMap;
 
 	//Winsock終了処理
 	WSACleanup();

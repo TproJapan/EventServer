@@ -1,21 +1,4 @@
-//#pragma once
-//#include <stdio.h>
-//#pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
-/*
-#include <WinSock2.h>
-#include <map>
-#include <thread>
-#include "CSocketMap.h"
-#include "thread_pool.h"
-#include <boost/asio.hpp>
-#include <boost/thread.hpp>
-#include <boost/bind.hpp>
-#include <boost/shared_ptr.hpp>
-#include <iostream>
-#include <string>
-#include <boost/format.hpp>
-*/
 #include <WinSock2.h>
 #include "ConnectClient.h"
 #include "CommonVariables.h"
@@ -62,7 +45,7 @@ void ConnectClient::func()
 
 	while (1) {
 		//サーバーステータスチェック
-		if (checkServerStatus() == 1) break;
+		//if (checkServerStatus() == 1) break;
 
 		printf("書き込みを待っています.\n");
 		DWORD worker_dwTimeout = TIMEOUT_MSEC;
