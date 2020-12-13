@@ -35,20 +35,11 @@ public:
     }
 
     void terminateAllThreads() {
+        //group_.interrupt_all();
+
         for (std::size_t i = 0; i < group_.size(); ++i) {
-            //boost::thread_group管理下から解放。joinで待たなくなる
-            group_.remove_thread(threads_[i]);
-
-            //c++11 std::threadを明示的にterminateする
-            TerminateThread(threads_[i]->native_handle(), (DWORD)0x00);
-
-            //terminateできたか確認
-            DWORD result;
-            GetExitCodeThread(threads_[i]->native_handle(), &result);
-            printf("result:%ui\n", result);//どうやら生きているっぽい
-
-            //threadハンドルクローズ
-            CloseHandle(threads_[i]->native_handle());
+            threads_[i]->interrupt();
         }
+
     }
 };

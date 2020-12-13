@@ -3,6 +3,7 @@
 #include "ConnectClient.h"
 #include "CommonVariables.h"
 #include "CommonFunc.h"
+#include <boost/asio.hpp>
 
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -46,6 +47,7 @@ void ConnectClient::func()
 	while (1) {
 		//サーバーステータスチェック
 		//if (checkServerStatus() == 1) break;
+		boost::this_thread::interruption_point();
 
 		printf("書き込みを待っています.\n");
 		DWORD worker_dwTimeout = TIMEOUT_MSEC;
@@ -63,7 +65,7 @@ void ConnectClient::func()
 		}
 
 		if (worker_nRet == WSA_WAIT_TIMEOUT) {
-			printf("タイムアウト発生!!!\n");
+			printf("タイムアウト発生です!!!\n");
 			continue;
 		}
 
