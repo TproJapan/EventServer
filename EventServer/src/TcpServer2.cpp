@@ -286,5 +286,8 @@ int main(int argc, char* argv[])
 	WSACleanup();
 
 	printf("終了しました\n");
-	return(0);
+	//プログラムがプロセス正常終了して呼び出し元(mainなのでOS)に戻す所で不具合が起きてるっぽい
+	exit(0);//とりあえず強制的に関数を終わらせる
+
+	//return(0);
 }
