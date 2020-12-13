@@ -46,7 +46,9 @@ void ConnectClient::func()
 
 	while (1) {
 		//サーバーステータスチェック
-		//if (checkServerStatus() == 1) break;
+		if (checkServerStatus() == 1) break;
+
+		//強制終了用のinterruption_pointを張る
 		boost::this_thread::interruption_point();
 
 		printf("書き込みを待っています.\n");
