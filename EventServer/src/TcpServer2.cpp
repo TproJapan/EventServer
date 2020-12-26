@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
 				break;
 			}
 
-			printf("クライアントと接続しました:[%s]\n", buf);
+			printf("パイプクライアントと接続しました:[%s]\n", buf);
 
 			// 受信メッセージが "stop" の場合はTcpServerを停止
 			if (strcmp(buf, "stop") == 0) {
