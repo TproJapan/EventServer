@@ -19,12 +19,14 @@
     </ProjectConfiguration>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\src\BoostLog.cpp" />
     <ClCompile Include="..\src\CommonFunc.cpp" />
     <ClCompile Include="..\src\ConnectClient.cpp" />
     <ClCompile Include="..\src\CSocketMap.cpp" />
     <ClCompile Include="..\src\TcpServer2.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="..\src\BoostLog.h" />
     <ClInclude Include="..\src\CommonFunc.h" />
     <ClInclude Include="..\src\CommonVariables.h" />
     <ClInclude Include="..\src\ConnectClient.h" />
@@ -134,12 +136,12 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>C:\Boost_1_74\include\boost-1_74;$(SolutinDir)include</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>C:\Program Files\boost\boost_1_76_0\include\boost-1_76;$(SolutinDir)include</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>C:\Boost_1_74\lib\x86;C:\Boost_1_74\lib\x64</AdditionalLibraryDirectories>
+      <AdditionalLibraryDirectories>C:\Program Files\boost\boost_1_76_0\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">

@@ -1,27 +1,25 @@
 # EventServer
-Tcp or Udp Server/Clinet Project for my Studying C++
+Multi Thread Tcp Server/Clinet Project for my Studying C++
 
-# [起動方法]
-(1) サーバー
-    #cd \Project Root\EventServer\Debug
-    #TcpServer2.exe 5000
-      (5000はポート番号。システムで使用していない任意の番号で可)
+# [Launch System]
+(1) Observer
+    #cd \Project Root\x64\Debug
+    #Observer.exe
+      (Then will start EventServer2.exe with port 5000 automatically)
 
-(2) クライアント
-    #cd \Project Root\EventServer\Debug
-    #ipconfig(IPv4アドレス調べる)
-    #TcpClient.exe IPv4アドレス 5000
+(2) Client
+    #cd \Project Root\x64\Debug
+    #ipconfig(Get Local IPv4 address)
+    #TcpClient.exe IPv4 address 5000
 
-# [停止方法]
-(1) サーバー
-    #cd \Project Root\EventServer\Debug
+# [Stop]
+(1) Kill Observer Process(CTRL + C)
+
+(2) Stop Server
+    #cd \Project Root\x64\Debug
     #Stop.exe stop
-    もしくは、Ctrl + C
+    Or Ctrl + C
 
-(2) クライアント
+(3) Client
     「T子文字のアルファベットを入力してください」
 　　の入力待ちに対して「.」(ピリオド)を入力すると終了する。
-
-# [備考]
-・TcpServerはクライアントと接続中に、他のクライアントからの
-   接続要求に応答できます。

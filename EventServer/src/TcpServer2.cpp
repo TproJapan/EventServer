@@ -10,12 +10,16 @@
 #include "CommonFunc.h"
 #define __MAIN_SRC__
 #include "CommonVariables.h"
+#include "BoostLog.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // メイン処理
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
+	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
+	logging::add_common_attributes();
+	char log_buff[1024];
 	int nRet = 0;
 
 	///////////////////////////////////
@@ -48,6 +52,9 @@ int main(int argc, char* argv[])
 		(LPSECURITY_ATTRIBUTES)NULL);	// セキュリティ属性
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		printf("CreateNamedPipe error. (%ld)\n", GetLastError());
+		sprintf(log_buff, "CreateNamedPipe error. (%ld)\n", GetLastError());
+		write_log(5,log_buff);
+		
 		return -1;
 	}
 
@@ -57,6 +64,8 @@ int main(int argc, char* argv[])
 	HANDLE eventConnect = CreateEvent(0, FALSE, FALSE, 0);
 	if (eventConnect == INVALID_HANDLE_VALUE) {
 		printf("CreateNamedPipe error. (%ld)\n", GetLastError());
+		sprintf(log_buff, "CreateNamedPipe error. (%ld)\n", GetLastError());
+		write_log(5, log_buff);
 		return -1;
 	}
 	overlappedConnect.hEvent = eventConnect;
@@ -67,6 +76,8 @@ int main(int argc, char* argv[])
 	BOOL bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
 	if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {	// konishi
 		printf("ConnectNamedPipe error. (%ld)\n", GetLastError());
+		sprintf(log_buff, "ConnectNamedPipe error. (%ld)\n", GetLastError());
+		write_log(5, log_buff);
 		return -1;
 	}
 
@@ -80,6 +91,8 @@ int main(int argc, char* argv[])
 	wVersionRequested = MAKEWORD(2, 0);
 	if (WSAStartup(wVersionRequested, &WsaData) != 0) {
 		printf("WSAStartup() error. code=%d\n", WSAGetLastError());
+		sprintf(log_buff, "WSAStartup() error. code=%d\n", WSAGetLastError());
+		write_log(5, log_buff);
 		return -1;
 	}
 
@@ -88,12 +101,15 @@ int main(int argc, char* argv[])
 	srcSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (srcSocket == -1) {
 		printf("socket error\n");
+		sprintf(log_buff, "socket error\n");
+		write_log(5, log_buff);
 		return -1;
 	}
 
 	HANDLE hEvent = WSACreateEvent();
 	if (hEvent == INVALID_HANDLE_VALUE) {
 		printf("WSACreateEvent error\n");
+		sprintf(log_buff, "WSACreateEvent error\n");
 		return -1;
 	}
 
@@ -103,6 +119,8 @@ int main(int argc, char* argv[])
 	if (nRet == SOCKET_ERROR)
 	{
 		printf("WSAEventSelect error. (%ld)\n", WSAGetLastError());
+		sprintf(log_buff, "WSAEventSelect error. (%ld)\n", WSAGetLastError());
+		write_log(5,log_buff);
 		WSACleanup();
 		return -1;
 	}
@@ -121,6 +139,8 @@ int main(int argc, char* argv[])
 	nRet = bind(srcSocket,(struct sockaddr*)&srcAddr,sizeof(srcAddr));
 	if (nRet == SOCKET_ERROR) {
 		printf("bind error. (%ld)\n", WSAGetLastError());
+		sprintf(log_buff, "bind error. (%ld)\n", WSAGetLastError());
+		write_log(5,log_buff);
 		return -1;
 	}
 
@@ -128,6 +148,8 @@ int main(int argc, char* argv[])
 	nRet = listen(srcSocket, 1);
 	if (nRet == SOCKET_ERROR) {
 		printf("listen error. (%ld)\n", WSAGetLastError());
+		sprintf(log_buff, "listen error. (%ld)\n", WSAGetLastError());
+		write_log(5,log_buff);
 		return -1;
 	}
 
@@ -144,6 +166,8 @@ int main(int argc, char* argv[])
 		eventList[1] = eventConnect;//名前付きパイプ
 
 		printf("新規接続を待っています.\n");
+		sprintf(log_buff, "新規接続を待っています.\n");
+		write_log(2,log_buff);
 		//DWORD dwTimeout = WSA_INFINITE;	// 無限待ち
 		DWORD dwTimeout = TIMEOUT_MSEC;
 
@@ -151,15 +175,21 @@ int main(int argc, char* argv[])
 		if (nRet == WSA_WAIT_FAILED)
 		{
 			printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+			sprintf(log_buff, "WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+			write_log(5,log_buff);
 			break;
 		}
 
 		if (nRet == WSA_WAIT_TIMEOUT) {
 			printf("タイムアウト発生!!!\n");
+			sprintf(log_buff, "タイムアウト発生!!!\n");
+			write_log(2,log_buff);
 			continue;
 		}
 
 		printf("WSAWaitForMultipleEvents nRet=%ld\n", nRet);
+		sprintf(log_buff, "WSAWaitForMultipleEvents nRet=%ld\n", nRet);
+		write_log(2,log_buff);
 
 		// イベントを検知したHANDLE
 		HANDLE mainHandle = eventList[nRet];
@@ -167,6 +197,8 @@ int main(int argc, char* argv[])
 		//ハンドル書き込み検出
 		if (mainHandle == eventConnect) {
 			printf("パイプに接続要求を受けました\n");
+			sprintf(log_buff, "パイプに接続要求を受けました\n");
+			write_log(2,log_buff);
 
 			DWORD byteTransfer;
 			DWORD NumBytesRead;
@@ -175,8 +207,13 @@ int main(int argc, char* argv[])
 
 			bRet = GetOverlappedResult(mainHandle, &overlappedConnect, &byteTransfer, TRUE);
 			printf("GetOverlappedResult bRet = %ld\n", bRet);
+			sprintf(log_buff, "GetOverlappedResult bRet = %ld\n", bRet);
+			write_log(2,log_buff);
+
 			if (bRet != TRUE) {
 				printf("GetOverlappedResult error\n");
+				sprintf(log_buff, "GetOverlappedResult error\n");
+				write_log(5,log_buff);
 				//DisconnectNamedPipe(hPipe);
 				break;
 			}
@@ -191,17 +228,23 @@ int main(int argc, char* argv[])
 				(LPOVERLAPPED)NULL);
 			if (bRet != TRUE) {
 				printf("ReadFile error\n");
+				sprintf(log_buff, "ReadFile error\n");
+				write_log(5,log_buff);
 				//DisconnectNamedPipe(hPipe);
 				break;
 			}
 
 			printf("パイプクライアントと接続しました:[%s]\n", buf);
+			sprintf(log_buff, "パイプクライアントと接続しました:[%s]\n", buf);
+			write_log(2,log_buff);
 
 			// 受信メッセージが "stop" の場合はTcpServerを停止
 			if (strcmp(buf, "stop") == 0) {
 				std::lock_guard<std::mutex> lk(server_status_Mutex);
 				server_status = 1;
 				printf("サーバ停止要求を受信しました\n");
+				sprintf(log_buff, "サーバ停止要求を受信しました\n");
+				write_log(2,log_buff);
 			}
 
 			// パイプクライアントに応答メッセージを送信
@@ -211,6 +254,8 @@ int main(int argc, char* argv[])
 				&NumBytesWritten, (LPOVERLAPPED)NULL);
 			if (bRet != TRUE) {
 				printf("WriteFile error\n");
+				sprintf(log_buff, "WriteFile error\n");
+				write_log(5,log_buff);
 				//DisconnectNamedPipe(hPipe);
 				break;
 			}
@@ -222,6 +267,8 @@ int main(int argc, char* argv[])
 			bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
 			if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {
 				printf("ConnectNamedPipe error. (%ld)\n", GetLastError());
+				sprintf(log_buff, "ConnectNamedPipe error. (%ld)\n", GetLastError());
+				write_log(5,log_buff);
 				break;
 			}
 
@@ -233,6 +280,8 @@ int main(int argc, char* argv[])
 		if (WSAEnumNetworkEvents(srcSocket, mainHandle, &mainEvents) == SOCKET_ERROR)
 		{
 			printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+			sprintf(log_buff, "WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+			write_log(5,log_buff);
 			break;
 		}
 
@@ -265,6 +314,8 @@ int main(int argc, char* argv[])
 		worker_threadNum = pSocketMap->getCount();
 		if (worker_threadNum == 0) {
 			printf("ワーカースレッド残0。終了に向かいます\n");
+			sprintf(log_buff, "ワーカースレッド残0。終了に向かいます\n");
+			write_log(2,log_buff);
 			break;
 		}
 
@@ -272,6 +323,8 @@ int main(int argc, char* argv[])
 
 		if (count <= 0) {
 			printf("タイムアップ。ワーカースレッド残%d。強制終了します\n", worker_threadNum);
+			sprintf(log_buff, "タイムアップ。ワーカースレッド残%d。強制終了します\n", worker_threadNum);
+			write_log(2,log_buff);
 			tp.terminateAllThreads();
 			break;
 		}
@@ -286,5 +339,7 @@ int main(int argc, char* argv[])
 	WSACleanup();
 
 	printf("終了しました\n");
+	sprintf(log_buff, "終了しました\n");
+	write_log(2,log_buff);
 	return(0);
 }
