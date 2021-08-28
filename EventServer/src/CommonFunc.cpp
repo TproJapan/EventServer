@@ -19,9 +19,7 @@ int checkServerStatus()
 bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent, thread_pool& tp)
 {
 	printf("クライアント接続要求を受け付けました\n");
-	char log_buff[1024];
-	sprintf(log_buff, "クライアント接続要求を受け付けました\n");
-	write_log(2,log_buff);
+	write_log(2, "クライアント接続要求を受け付けました\n");
 
 	int	addrlen;
 	struct sockaddr_in dstAddr;
@@ -32,25 +30,21 @@ bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent, thread_pool& tp)
 	if (newSock == INVALID_SOCKET)
 	{
 		printf("accept error. (%ld)\n", WSAGetLastError());
-		sprintf(log_buff, "accept error. (%ld)\n", WSAGetLastError());
-		write_log(5,log_buff);
+		write_log(5, "accept error. (%ld)\n", WSAGetLastError());
 		return true;
 	}
 
 	printf("[%s]から接続を受けました. newSock=%d\n", inet_ntoa(dstAddr.sin_addr), newSock);
-	sprintf(log_buff, "[%s]から接続を受けました. newSock=%d\n", inet_ntoa(dstAddr.sin_addr), newSock);
-	write_log(2,log_buff);
+	write_log(2, "[%s]から接続を受けました. newSock=%d\n", inet_ntoa(dstAddr.sin_addr), newSock);
 
 	int socket_size = socketMap.getCount();
-	printf(" socketMap.getCount():%d\n", socket_size);
-	sprintf(log_buff, " socketMap.getCount():%d\n", socket_size);
-	write_log(2,log_buff);
+	printf("socketMap.getCount():%d\n", socket_size);
+	write_log(2, "socketMap.getCount():%d\n", socket_size);
 
 	if (socket_size == CLIENT_MAX + 2) //2は名前付きパイプ, listenソケット
 	{
 		printf("同時接続可能クライアント数を超過\n");
-		sprintf(log_buff, "同時接続可能クライアント数を超過\n");
-		write_log(2,log_buff);
+		write_log(2, "同時接続可能クライアント数を超過\n");
 		closesocket(newSock);
 		return false;
 	}

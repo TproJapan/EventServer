@@ -30,16 +30,13 @@ ConnectClient::~ConnectClient()
 ///////////////////////////////////////////////////////////////////////////////
 void ConnectClient::func()
 {
-	char log_buff[1024];
-
 	HANDLE tmpEvent = WSACreateEvent();
 
 	//socketとイベント変数を、どの観点のイベントで反応させるかを紐づけ
 	int nRet = WSAEventSelect(_socket, tmpEvent, FD_READ | FD_CLOSE);
 	if (nRet == SOCKET_ERROR) {
 		printf("WSAEventSelect error. (%ld)\n", WSAGetLastError());
-		sprintf(log_buff, "WSAEventSelect error. (%ld)\n", WSAGetLastError());
-		write_log(5,log_buff);
+		write_log(5, "WSAEventSelect error. (%ld)\n", WSAGetLastError());
 		return;
 	}
 
@@ -58,8 +55,7 @@ void ConnectClient::func()
 		boost::this_thread::interruption_point();
 
 		printf("書き込みを待っています.\n");
-		sprintf(log_buff, "書き込みを待っています.\n");
-		write_log(2,log_buff);
+		write_log(2, "書き込みを待っています.\n");
 		DWORD worker_dwTimeout = TIMEOUT_MSEC;
 
 		//イベント多重待ち
@@ -71,21 +67,18 @@ void ConnectClient::func()
 		if (worker_nRet == WSA_WAIT_FAILED)
 		{
 			printf("WSAWaitForMultipleEvents wait error. (%ld)\n", WSAGetLastError());
-			sprintf(log_buff, "WSAWaitForMultipleEvents wait error. (%ld)\n", WSAGetLastError());
-			write_log(5,log_buff);
+			write_log(5, "WSAWaitForMultipleEvents wait error. (%ld)\n", WSAGetLastError());
 			break;
 		}
 
 		if (worker_nRet == WSA_WAIT_TIMEOUT) {
 			printf("タイムアウト発生です!!!\n");
-			sprintf(log_buff, "タイムアウト発生です!!!\n");
-			write_log(2,log_buff);
+			write_log(2, "タイムアウト発生です!!!\n");
 			continue;
 		}
 
 		printf("WSAWaitForMultipleEvents nRet=%ld\n", worker_nRet);
-		sprintf(log_buff, "WSAWaitForMultipleEvents nRet=%ld\n", worker_nRet);
-		write_log(2,log_buff);
+		write_log(2, "WSAWaitForMultipleEvents nRet=%ld\n", worker_nRet);
 
 		// イベントを検知したHANDLE
 		HANDLE workerHandle = workerEventList[worker_nRet];
@@ -95,8 +88,7 @@ void ConnectClient::func()
 		if (WSAEnumNetworkEvents(_socket, workerHandle, &events) == SOCKET_ERROR)
 		{
 			printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
-			sprintf(log_buff, "WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
-			write_log(5,log_buff);
+			write_log(5, "WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
 			break;
 		}
 
@@ -118,8 +110,7 @@ void ConnectClient::func()
 	deleteConnection(*pSocketMap, tmpEvent);
 	delete this;
 	printf("Finished Thead\n");
-	sprintf(log_buff, "Finished Thead\n");
-	write_log(2,log_buff);
+	write_log(2, "Finished Thead\n");
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -127,29 +118,24 @@ void ConnectClient::func()
 ///////////////////////////////////////////////////////////////////////////////
 bool ConnectClient::recvHandler(CSocketMap& socketMap, HANDLE& hEvent)
 {
-	char log_buff[1024];
 	SOCKET sock = socketMap.getSocket(hEvent);
 	printf("クライアント(%ld)からデータを受信\n", sock);
-	sprintf(log_buff, "クライアント(%ld)からデータを受信\n", sock);
-	write_log(2,log_buff);
+	write_log(2, "クライアント(%ld)からデータを受信\n", sock);
 
 	char buf[1024];
 	int stSize = recv(sock, buf, sizeof(buf), 0);
 	if (stSize <= 0) {
 		printf("recv error.\n");
-		sprintf(log_buff, "recv error.\n");
-		write_log(4,log_buff);
+		write_log(4, "recv error.\n");
 		printf("クライアント(%ld)との接続が切れました\n", sock);
-		sprintf(log_buff, "クライアント(%ld)との接続が切れました\n", sock);
-		write_log(4,log_buff);
+		write_log(4, "クライアント(%ld)との接続が切れました\n", sock);
 
 		deleteConnection(socketMap, hEvent);
 		return true;
 	}
 
 	printf("変換前:[%s] ==> ", buf);
-	sprintf(log_buff, "変換前:[%s] ==> ", buf);
-	write_log(2,log_buff);
+	write_log(2, "変換前:[%s] ==> ", buf);
 
 	for (int i = 0; i < (int)stSize; i++) { // bufの中の小文字を大文字に変換
 		if (isalpha(buf[i])) {
@@ -161,19 +147,16 @@ bool ConnectClient::recvHandler(CSocketMap& socketMap, HANDLE& hEvent)
 	stSize = send(sock, buf, strlen(buf) + 1, 0);
 	if (stSize != strlen(buf) + 1) {
 		printf("send error.\n");
-		sprintf(log_buff, "send error.\n");
-		write_log(4,log_buff);
+		write_log(4, "send error.\n");
 		printf("クライアントとの接続が切れました\n");
-		sprintf(log_buff, "クライアントとの接続が切れました\n");
-		write_log(4,log_buff);
+		write_log(4, "クライアントとの接続が切れました\n");
 
 		deleteConnection(socketMap, hEvent);
 		return true;
 	}
 
 	printf("変換後:[%s] \n", buf);
-	sprintf(log_buff, "変換後:[%s] \n", buf);
-	write_log(2,log_buff);
+	write_log(2, "変換後:[%s] \n", buf);
 	return true;
 }
 
@@ -182,12 +165,10 @@ bool ConnectClient::recvHandler(CSocketMap& socketMap, HANDLE& hEvent)
 ///////////////////////////////////////////////////////////////////////////////
 bool ConnectClient::closeHandler(CSocketMap& socketMap, HANDLE& hEvent)
 {
-	char log_buff[1024];
 	SOCKET sock = socketMap.getSocket(hEvent);
 
 	printf("クライアント(%d)との接続が切れました\n", sock);
-	sprintf(log_buff, "クライアント(%d)との接続が切れました\n", sock);
-	write_log(4,log_buff);
+	write_log(4, "クライアント(%d)との接続が切れました\n", sock);
 	deleteConnection(socketMap, hEvent);
 	return true;
 }
