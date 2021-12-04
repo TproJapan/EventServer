@@ -19,6 +19,10 @@
 #include <algorithm>
 #include <mutex>
 #include <pthread.h>
+#include "BoostLog.h"
+#include <boost/asio.hpp>
+#include <boost/bind.hpp>
+#include "thread_pool.h"
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
 ///////////////////////////////////////////////////////////////////////////////
@@ -163,6 +167,9 @@ class ConnectClient {
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
+	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
+	//logging::add_common_attributes();
+
 	///////////////////////////////////
     // コマンド引数の解析
     ///////////////////////////////////
@@ -170,7 +177,12 @@ int main(int argc, char* argv[])
       printf("TcpServer portNo\n");
       return -1;
     }
+	write_log(2, "ログ書き込み成功\n");
 
+	//スレッドプール作成
+	boost::asio::io_service io_service;
+	thread_pool tp(io_service, CLIENT_MAX);
+	
     // ポート番号の設定
     int nPortNo;            // ポート番号
     nPortNo = atol(argv[1]);
