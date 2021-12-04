@@ -19,6 +19,7 @@
 #include <algorithm>
 #include <mutex>
 #include <pthread.h>
+#define BOOST_LOG_DYN_LINK 1
 #include "BoostLog.h"
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
@@ -43,7 +44,7 @@ pthreadid_vector pthreadid_vec;//pthread id管理Vector配列
 ///////////////////////////////////////////////////////////////////////////////
 // 関数
 ///////////////////////////////////////////////////////////////////////////////
-void sigalrm_handler(int signo);
+void sigalrm_handler(int signo, thread_pool _tp);
 void sigusr2_handler(int signo);
 
 std::mutex mtx;
@@ -63,26 +64,16 @@ class ConnectClient {
 			_live = true;
 		};
 		~ConnectClient(){
-			std::thread::id this_id = std::this_thread::get_id();
-			auto it = std::find(threadid_vec.begin(), threadid_vec.end(), this_id);
 
-			if(it != threadid_vec.end()) {
-				//C++11らしい記述で、pthread_tをvectorから削除
-				size_t index = std::distance(threadid_vec.begin(), it);
-				pthreadid_vec.erase(pthreadid_vec.begin() + index);
-
-				//std::thread::idをvectorから削除
-				threadid_vec.erase(it);
-			}
 		};
 	public: 
-		void operator()(){
+		void func(){
 			while(1){
 				///////////////////////////////////
 				// 排他制御でserver_statusチェック
 				///////////////////////////////////
 
-				//if(GetServerStatus() != 0) _live = false;
+				if(GetServerStatus() != 0) _live = false;
 
 				//終了確認
 				if(_live == false){
@@ -168,7 +159,7 @@ class ConnectClient {
 int main(int argc, char* argv[])
 {
 	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
-	//logging::add_common_attributes();
+	logging::add_common_attributes();
 
 	///////////////////////////////////
     // コマンド引数の解析
@@ -192,7 +183,7 @@ int main(int argc, char* argv[])
     ///////////////////////////////////
     struct sigaction act;
     memset(&act, 0, sizeof(act)); //メモリにゴミが入っているので初期化
-    act.sa_handler = sigalrm_handler;
+    act.sa_handler = (__sighandler_t)sigalrm_handler;
     act.sa_flags = SA_RESTART; //何度シグナルが来てもハンドラ実行を許可する
 
 	///////////////////////////////////
@@ -343,15 +334,19 @@ int main(int argc, char* argv[])
 
         	// クライアントとの通信
 			//ToDo:threadをnewしてvectorにpush_backしてみる
-			std::thread th{ConnectClient( dstSocket)};
-			const std::thread::id new_thread_id = th.get_id();
+			//std::thread th{ConnectClient( dstSocket)};
+			//const std::thread::id new_thread_id = th.get_id();
 			
 			//Vectorに保存しておく
-			threadid_vec.push_back(new_thread_id);
-			pthreadid_vec.push_back(th.native_handle());//C++11式、プラットフォーム固有のスレッドハンドラ取得
+			//threadid_vec.push_back(new_thread_id);
+			//pthreadid_vec.push_back(th.native_handle());//C++11式、プラットフォーム固有のスレッドハンドラ取得
 
 			//デタッチ
-			th.detach();
+			//th.detach();
+
+			//プールスレッドにバインド
+			ConnectClient* h = new ConnectClient(dstSocket);
+			tp.post(boost::bind(&ConnectClient::func, h));
   		}
 	}
 
@@ -387,26 +382,28 @@ int main(int argc, char* argv[])
 	return(0);
 }
 
-void sigalrm_handler(int signo)
+void sigalrm_handler(int signo, thread_pool _tp)
 {
 	char work[256];
 	sprintf(work, "sig_handler started. signo=%d\n", signo);
 
 	//pthreadid_vecに入っているスレッドidを直指定してスレッドを殺しにいく
 	// C++11 Range based for
-	for(const auto& item: pthreadid_vec) {
-		std::cout << "pthread id:" << item << "\n";
-	}
-	
-	for(const auto& item: pthreadid_vec) {
-		int r = pthread_cancel(item);//pthread_killではなく
-		printf("pthread_cancel result = %d\n", r);
-		std::cout << "Killed pthread id:" << item << "\n";
-	}
+//	for(const auto& item: pthreadid_vec) {
+//		std::cout << "pthread id:" << item << "\n";
+//	}
+//	
+//	for(const auto& item: pthreadid_vec) {
+//		int r = pthread_cancel(item);//pthread_killではなく
+//		printf("pthread_cancel result = %d\n", r);
+//		std::cout << "Killed pthread id:" << item << "\n";
+//	}
 
 	//ToDo:windowsだとpthreadではなくTerminateThread
 	//Memo:signal,sigactionもlinuxのみの機構。
 
+	//ワーカースレッド強制終了します
+	_tp.terminateAllThreads();
 	return;
 }
 
