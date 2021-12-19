@@ -19,11 +19,13 @@
 #include <algorithm>
 #include <mutex>
 #include <pthread.h>
-#define BOOST_LOG_DYN_LINK 1
+//#define BOOST_LOG_DYN_LINK 1 //konishi makefileのCCFLAGSに引っ越し
 #include "BoostLog.h"
+#include "TcpCommon.h"
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include "thread_pool.h"
+#define MAXFD 64
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
 ///////////////////////////////////////////////////////////////////////////////
@@ -39,8 +41,11 @@ typedef std::vector<pthread_t> pthreadid_vector;
 pthreadid_vector pthreadid_vec;//pthread id管理Vector配列
 
 #define CLIENT_MAX	32 //マシーンリソースに依存する数
+//#define CLIENT_MAX	2 //マシーンリソースに依存する数
 #define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
 #define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)
+int fd_start;//Startへの立ち上がり完了報告用名前付きパイプ;
+int fddevnull = 0;//dev/null用fd
 ///////////////////////////////////////////////////////////////////////////////
 // 関数
 ///////////////////////////////////////////////////////////////////////////////
@@ -68,6 +73,8 @@ class ConnectClient {
 		};
 	public: 
 		void func(){
+			printf("func started. _dstSocket=%d\n", _dstSocket);// konishi
+			
 			while(1){
 				///////////////////////////////////
 				// 排他制御でserver_statusチェック
@@ -158,25 +165,119 @@ class ConnectClient {
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
+	//BoostLog有効化
 	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
 	logging::add_common_attributes();
 
-	///////////////////////////////////
-    // コマンド引数の解析
-    ///////////////////////////////////
-    if ( argc != 2 ) {
-      printf("TcpServer portNo\n");
-      return -1;
+	char work[256];
+    pid_t s_pid;
+	int nPortNo;
+
+    //Startからポート番号を受け取る
+    nPortNo = atoi(argv[1]);
+
+    //Startからプロセスidを受け取る
+	char* tmp = argv[2];
+
+	//------------------------------------------------------
+    // 状態.
+    // 子プロセスのみとなったがTTYは保持したまま.
+    //------------------------------------------------------
+
+
+    //------------------------------------------------------
+    // TTYを切り離してセッションリーダー化、プロセスグループリーダー化する.
+    //------------------------------------------------------
+    setsid();
+
+
+    //------------------------------------------------------
+    // HUPシグナルを無視.
+    // 親が死んだ時にHUPシグナルが子にも送られる可能性があるため.
+    //------------------------------------------------------
+    signal(SIGHUP, SIG_IGN);
+ 	signal(SIGCHLD, SIG_IGN);
+
+
+    //------------------------------------------------------
+    // 状態.
+    // このままだとセッションリーダーなのでTTYをオープンするとそのTTYが関連づけられてしまう.
+    //------------------------------------------------------
+
+
+    //------------------------------------------------------
+    // 親プロセス(セッショングループリーダー)を切り離す.
+    // 親を持たず、TTYも持たず、セッションリーダーでもない状態になる.
+    //------------------------------------------------------
+	pid_t pid = 0;
+	pid = fork();
+    if (pid == -1 ) 
+	{
+		write_log(4, "Fork has failed in EventServer.cpp\n");
+		return -1;
     }
-	write_log(2, "ログ書き込み成功\n");
+
+    if(pid != 0){
+        // 子供世代プロセスを終了し、孫世代になる.
+        _exit(0);
+    }
+
+    //------------------------------------------------------
+    // デーモンとして動くための準備を行う.
+    //------------------------------------------------------
+	//Logファイルパス取得
+	char dir[255];
+	getcwd(dir,255);
+	//char log_path[255];
+	//sprintf(log_path, "%s/Log", PROJ_HOME);
+
+
+    // カレントディレクトリ変更.
+    // ルートディレクトリに移動.(デーモンプロセスはルートディレクトリを起点にして作業するから)
+    chdir("/");
+
+    // 親から引き継いだ全てのファイルディスクリプタのクローズ.
+    for(int i = 0; i < MAXFD; i++){
+        close(i);
+    }
+
+    // stdin,stdout,stderrをdev/nullでオープン.
+    // 単にディスクリプタを閉じるだけだとこれらの出力がエラーになるのでdev/nullにリダイレクトする.
+    if((fddevnull = open("/dev/null", O_RDWR, 0) != -1)){
+
+        // ファイルディスクリプタの複製.
+        // このプロセスの0,1,2をfdが指すdev/nullを指すようにする.
+        dup2(fddevnull, 0);
+        dup2(fddevnull, 1);
+        dup2(fddevnull, 2);
+        if(fddevnull < 2){
+            close(fddevnull);
+        }
+    }
+
+    //------------------------------------------------------
+    // デーモン化後の処理
+    //------------------------------------------------------
+
+	//Startプロセス通信用の名前つきパイプを書込専用で開き
+    if ((fd_start = open(PIPE_START, O_WRONLY)) == -1)
+    {
+		write_log(4, "open PIPE_START failed\n");
+        return -1;
+    }
+
+	//Startへプロセスid送信
+	char buff[16];
+	if (write(fd_start, buff, strlen(buff)) != strlen(buff))
+	{
+		write_log(4, "write PIPE_START failed\n");
+		close(fd_start);
+		return -1;
+	}
 
 	//スレッドプール作成
 	boost::asio::io_service io_service;
 	thread_pool tp(io_service, CLIENT_MAX);
-	
-    // ポート番号の設定
-    int nPortNo;            // ポート番号
-    nPortNo = atol(argv[1]);
 
 	///////////////////////////////////
     // シグナルハンドラの設定
@@ -312,6 +413,10 @@ int main(int argc, char* argv[])
 		///////////////////////////////////////
   		// 反応のあったソケットをチェック
 		///////////////////////////////////////
+
+		//TODO 現在接続数がCLIANT_MAX数より少ないかチェック
+		//多かったら新規接続を受け付けない
+
   		 // 新規のクライアントから接続要求がきた
   		if ( FD_ISSET(srcSocket, &readfds) ) {
   			printf("クライアント接続要求を受け付けました\n");
@@ -346,6 +451,11 @@ int main(int argc, char* argv[])
 
 			//プールスレッドにバインド
 			ConnectClient* h = new ConnectClient(dstSocket);
+  			//TODO;memory解放処理するためにConnectClient*のList変数で管理する
+			  //TODO;ConnectClientに切断フラグを追加する
+			  //TODO;SELECT_TIMER_SECごとのwhileループでチェックする
+
+  			printf("*** h=%p, dstSocket=%d\n",h, dstSocket);//konishi
 			tp.post(boost::bind(&ConnectClient::func, h));
   		}
 	}

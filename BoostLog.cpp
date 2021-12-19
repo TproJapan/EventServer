@@ -1,4 +1,4 @@
-#define BOOST_LOG_DYN_LINK 1	// konishi
+//#define BOOST_LOG_DYN_LINK 1	// konishi  makefile‚ÌCCFLAG‚Éˆø‚Á‰z‚µ
 #include "BoostLog.h"
 
 ///////////////////////////////////////////////////////////////////////////////
