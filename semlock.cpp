@@ -7,6 +7,7 @@
 #include <sys/ipc.h>
 #include <errno.h>
 #include "semlock.h"
+#include "BoostLog.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // ＤＥＦＩＮＥ
@@ -48,7 +49,8 @@ int sem_lock(int lockid,					// ロックＩＤ(どの観点でセマフォを�
 	if (  lockid < LOCK_ID_TYPE01  ||
 		  lockid > LOCK_ID_MAX      ) {
 #ifdef DEBUG
-		printf("invalid lockid \n");
+		//printf("invalid lockid \n");
+		write_log(4, "invalid lockid \n");
 #endif
 		return(LOCK_RC_PARM);				// パラメタ不正
 	}
@@ -60,10 +62,11 @@ int sem_lock(int lockid,					// ロックＩＤ(どの観点でセマフォを�
 		semkey[lockid] = ftok(SEMKEYF,	
 							  lockid);
 		//printf("%d\n", semkey[lockid]);
-
+		write_log(4, "%d\n", semkey[lockid]);
 		if ( semkey[lockid] == -1 )  {
 #ifdef  DEBUG
-			perror("ftok error");
+			//perror("ftok error");
+			write_log(4, "ftok error");
 #endif
 			return(LOCK_RC_SYSER) ;			// システムエラー
 		}
@@ -75,7 +78,8 @@ int sem_lock(int lockid,					// ロックＩＤ(どの観点でセマフォを�
 	char* buff;//tab区切り用領域
 
 	if(fp == NULL){
-		printf("Open setting.conf File Failed!\n");
+		//printf("Open setting.conf File Failed!\n");
+		write_log(4, "Open setting.conf File Failed!\n");
 		return -1;
 	}else{
 		fgets(line, 256, fp);
@@ -83,21 +87,24 @@ int sem_lock(int lockid,					// ロックＩＤ(どの観点でセマフォを�
 
 		if ( buff == NULL )
 		{
-			printf("Nothing in setting.conf File!\n");
+			//printf("Nothing in setting.conf File!\n");
+			write_log(4, "Nothing in setting.conf File!\n");
 			return -1;
 		}
 
 		//SEMKEYというフィールド名になっているかどうか
 		int nRet = strcmp(buff, "SEMKEY");
 		if(nRet != 0){
-			printf("Field Name isn't SEMKEY!\n");
+			//printf("Field Name isn't SEMKEY!\n");
+			write_log(4, "Field Name isn't SEMKEY!\n");
 			return -1;
 		}
 		buff = strtok(NULL, "\t");
 
 		if ( buff == NULL )
 		{
-			printf("Nothing in setting.conf File!\n");
+			//printf("Nothing in setting.conf File!\n");
+			write_log(4, "Nothing in setting.conf File!\n");
 			return -1;
 		}
 
@@ -107,13 +114,16 @@ int sem_lock(int lockid,					// ロックＩＤ(どの観点でセマフォを�
 		buff[2]以降が0~fのいずれかかどうか
 		numがint Max未満かどうか
 		*/
-		printf("SEMKEY:%s\n", buff);
+		//printf("SEMKEY:%s\n", buff);
+		write_log(2, "SEMKEY:%s\n", buff);
 
 		//hex文字列を数値に変換
 		std::string s = (std::string)(buff+2);//buff[2]の位置
-		printf("s=[%s]\n", s.c_str());
+		//printf("s=[%s]\n", s.c_str());
+		write_log(2, "s=[%s]\n", s.c_str());
 		int num = std::stoi(s, 0, 16);//C++11 only
-		printf("SEMKEY = %x\n", num);
+		//printf("SEMKEY = %x\n", num);
+		write_log(2, "SEMKEY = %x\n", num);
 		/*
 		std::stringstream str;
 		std::string s1 = (std::string)buff;
@@ -133,7 +143,8 @@ int sem_lock(int lockid,					// ロックＩＤ(どの観点でセマフォを�
 								ipcflg | PERMS);
 		if ( semid[lockid] == -1 )  {
 #ifdef DEBUG
-			perror("semget") ;	
+			//perror("semget") ;
+			write_log(4, "semget");	
 #endif
 			if ( errno == EINVAL ) {		// セマフォ数がシステムの値をオーバ 
 				return(LOCK_RC_OVER) ;		//  IDがとれない
@@ -155,7 +166,8 @@ int sem_lock(int lockid,					// ロックＩＤ(どの観点でセマフォを�
 
 	if ( rcode < 0 )  {
 #ifdef DEBUG
-		perror("semop");
+		//perror("semop");
+		write_log(4, "semop");
 #endif
 		if ( errno == ENOSPC ) {
 				return(LOCK_RC_NOMEM) ;		//   メモリ不足
@@ -179,7 +191,8 @@ int sem_unlock(int lockid)
 	// ロックＩＤの範囲チェック	
 	if ( lockid < 0  ||  lockid > 9 )  {
 #ifdef DEBUG
-		printf("invalid lockid \n");
+		//printf("invalid lockid \n");
+		write_log(4, "invalid lockid \n");
 #endif
 		return(LOCK_RC_PARM);
 	}
@@ -190,7 +203,8 @@ int sem_unlock(int lockid)
 					 1);
 	if ( rcode < 0 )  {
 #ifdef DEBUG
-		perror("semop unlock error");
+		//perror("semop unlock error");
+		write_log(4, "semop unlock error");
 #endif
 		if ( errno == ENOSPC ) {
 			return(LOCK_RC_NOMEM);
@@ -214,7 +228,8 @@ int sem_dellock(int lockid)
 	// ロックＩＤの範囲チェック	
 	if ( lockid < 0  ||  lockid > 9 )  {
 #ifdef DEBUG
-		printf("invalid lockid \n");
+		//printf("invalid lockid \n");
+		write_log(4, "invalid lockid \n");
 #endif
 		return(1);
 	}
@@ -226,7 +241,8 @@ int sem_dellock(int lockid)
 
 	if ( rcode == -1 ) {
 #ifdef DEBUG
-		perror("semctl");
+		//perror("semctl");
+		write_log(4, "semctl");
 #endif
 		return(-1);
 	}
@@ -237,9 +253,11 @@ int sem_dellock(int lockid)
 int semUnLock(int macro) {
 	int nRetS = sem_unlock(macro);
 	if (nRetS != 0) {
-		printf("sem_unlock error. nRet=%d\n", nRetS);
+		//printf("sem_unlock error. nRet=%d\n", nRetS);
+		write_log(4, "sem_unlock error. nRet=%d\n", nRetS);
 		return -1;
 	}
-	printf("Unlocked\n");
+	//printf("Unlocked\n");
+	write_log(2, "Unlocked\n");
 	return 0;
 }

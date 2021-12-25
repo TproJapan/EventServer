@@ -12,6 +12,20 @@
 #include "TcpCommon.h"
 #include <syslog.h>
 #include <string>
+
+int server_status; //サーバーステータス(0:起動, 1:シャットダウン)
+std::mutex	server_status_Mutex;
+
+int GetServerStatus(){
+	std::lock_guard<std::mutex> lock(server_status_Mutex);
+	return server_status;
+}
+
+int SetServerStatus(int status){
+	std::lock_guard<std::mutex> lk(server_status_Mutex);
+	server_status = status;
+	return server_status;
+}	
 //EDebugLv CurrentLogLv = EDebugLv::__DEBUG;
 //void createTimeStamp(std::string& strTime);//
 
@@ -254,7 +268,7 @@ int get_pid(std::string macro){
 	if(ptr == NULL){
 		return -2;
 	}else{
-		char tmpbuff[256];
+		char tmpbuff[1024];
 		sprintf(tmpbuff,"buff = (%s)\n", buff);
 		write_log(2, tmpbuff);
 	}

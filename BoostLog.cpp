@@ -1,4 +1,4 @@
-//#define BOOST_LOG_DYN_LINK 1	// konishi  makefile‚ÌCCFLAG‚Éˆø‚Á‰z‚µ
+//#define BOOST_LOG_DYN_LINK 1	// konishi  makefileã®CCFLAGã«å¼•ã£è¶Šã—
 #include "BoostLog.h"
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -86,8 +86,8 @@ void init(int level, const char* log_dir, const char* log_filename)
 ///////////////////////////////////////////////////////////////////////////////
 void test1()
 {
-    // ƒtƒBƒ‹ƒ^‚È‚µ‚ÅƒƒMƒ“ƒO
-    // Še‹æ•ª‚²‚Æ‚ÉƒƒO‚ªo—Í‚³‚ê‚é
+    // ãƒ•ã‚£ãƒ«ã‚¿ãªã—ã§ãƒ­ã‚®ãƒ³ã‚°
+    // å„åŒºåˆ†ã”ã¨ã«ãƒ­ã‚°ãŒå‡ºåŠ›ã•ã‚Œã‚‹
     BOOST_LOG_TRIVIAL(trace) << "A trace severity message";
     BOOST_LOG_TRIVIAL(debug) << "A debug severity message";
     BOOST_LOG_TRIVIAL(info) << "An informational severity message";
@@ -95,20 +95,20 @@ void test1()
     BOOST_LOG_TRIVIAL(error) << "An error severity message";
     BOOST_LOG_TRIVIAL(fatal) << "A fatal severity message";
 
-    const char* pName = "R“c‘¾˜Y";
+    const char* pName = "å±±ç”°å¤ªéƒ";
     int score = 85;
-    BOOST_LOG_TRIVIAL(fatal) << "šš@–¼‘O: " << pName << ". score:" << score;
+    BOOST_LOG_TRIVIAL(fatal) << "â˜…â˜…ã€€åå‰: " << pName << ". score:" << score;
 
-    // ƒƒO‚ÉƒtƒBƒ‹ƒ^‚ğ‚©‚¯‚éB
-    // infoˆÈã‚ğo—Í‚µA‚»‚êˆÈŠO‚ÍÌ‚Ä‚é
+    // ãƒ­ã‚°ã«ãƒ•ã‚£ãƒ«ã‚¿ã‚’ã‹ã‘ã‚‹ã€‚
+    // infoä»¥ä¸Šã‚’å‡ºåŠ›ã—ã€ãã‚Œä»¥å¤–ã¯æ¨ã¦ã‚‹
     using namespace logging;
     core::get()->set_filter
     (
         trivial::severity >= trivial::info
     );
 
-    // ƒtƒBƒ‹ƒ^•t‚«‚ÅƒƒMƒ“ƒO
-    // trace‚Ædebug‚Ío—Í‚³‚ê‚È‚¢
+    // ãƒ•ã‚£ãƒ«ã‚¿ä»˜ãã§ãƒ­ã‚®ãƒ³ã‚°
+    // traceã¨debugã¯å‡ºåŠ›ã•ã‚Œãªã„
     BOOST_LOG_TRIVIAL(trace) << "A trace severity message";
     BOOST_LOG_TRIVIAL(debug) << "A debug severity message";
     BOOST_LOG_TRIVIAL(info) << "An informational severity message";

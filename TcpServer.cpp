@@ -22,6 +22,7 @@
 //#define BOOST_LOG_DYN_LINK 1 //konishi makefileのCCFLAGSに引っ越し
 #include "BoostLog.h"
 #include "TcpCommon.h"
+#include "ConnectClient.h"
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include "thread_pool.h"
@@ -29,140 +30,32 @@
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
 ///////////////////////////////////////////////////////////////////////////////
-int server_status = 0;//サーバーステータス(0:起動, 1:シャットダウン)
 bool main_thread_flag = true;
 
 //std::thread vector
-typedef std::vector<std::thread::id> threadid_vector;
-threadid_vector threadid_vec;//thread id管理Vector配列
+//typedef std::vector<std::thread::id> threadid_vector;
+//threadid_vector threadid_vec;//thread id管理Vector配列
 
 //pthread_t vector
-typedef std::vector<pthread_t> pthreadid_vector;
-pthreadid_vector pthreadid_vec;//pthread id管理Vector配列
+//typedef std::vector<pthread_t> pthreadid_vector;
+//pthreadid_vector pthreadid_vec;//pthread id管理Vector配列
 
-#define CLIENT_MAX	32 //マシーンリソースに依存する数
-//#define CLIENT_MAX	2 //マシーンリソースに依存する数
-#define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
-#define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)
 int fd_start;//Startへの立ち上がり完了報告用名前付きパイプ;
 int fddevnull = 0;//dev/null用fd
+
 ///////////////////////////////////////////////////////////////////////////////
 // 関数
 ///////////////////////////////////////////////////////////////////////////////
 void sigalrm_handler(int signo, thread_pool _tp);
 void sigusr2_handler(int signo);
 
-std::mutex mtx;
-int GetServerStatus(){
-	std::lock_guard<std::mutex> lock(mtx);
-	return server_status;
-}
-///////////////////////////////////////////////////////////////////////////////
-//引数あり、クラスでの関数オブジェクト
-///////////////////////////////////////////////////////////////////////////////
-class ConnectClient {
-	int  _dstSocket;
-	bool _live;//生存管理フラグ
-	public:
-		ConnectClient(int dstSocket){
-			_dstSocket = dstSocket;
-			_live = true;
-		};
-		~ConnectClient(){
-
-		};
-	public: 
-		void func(){
-			printf("func started. _dstSocket=%d\n", _dstSocket);// konishi
-			
-			while(1){
-				///////////////////////////////////
-				// 排他制御でserver_statusチェック
-				///////////////////////////////////
-
-				if(GetServerStatus() != 0) _live = false;
-
-				//終了確認
-				if(_live == false){
-					std::cout << "Thread:" << std::this_thread::get_id() << "を終了します" << std::endl;
-					return;
-				}
-
-				///////////////////////////////////
-				// 通信
-				///////////////////////////////////
-				printf("client(%d)クライアントとの通信を開始します\n", _dstSocket);
-				size_t stSize;
-				char buf[1024];
-				
-				// タイムアウトの設定
-				struct timeval  tval;
-				tval.tv_sec  = SELECT_TIMER_SEC	;	// time_t  秒
-				tval.tv_usec = SELECT_TIMER_USEC;	// suseconds_t  マイクロ秒
-
-				fd_set  readfds;//ビットフラグ管理変数
-				FD_ZERO(&readfds);//初期化
-
-				FD_SET(_dstSocket, &readfds);
-
-				int nRet = select(FD_SETSIZE,
-								&readfds,
-								NULL,
-								NULL,
-								&tval );
-
-				if( nRet == -1 ) {
-					if(errno == EINTR){//シグナル割り込みは除外
-						continue;
-					}else{
-						// selectが異常終了
-						//システムコールのエラーを文字列で標準出力してくれる
-						//エラーメッセージの先頭に"select"と表示される(自分用の目印))
-						perror("select");
-						exit( 1 );
-					}
-				}else if ( nRet == 0 ) {
-					printf("workerスレッドでタイムアウト発生\n");
-					continue;
-				}
-
-				stSize = recv(_dstSocket,
-							buf,
-							sizeof(buf),
-							0);
-				if ( stSize <= 0 ) {
-					printf("recv error.\n");
-					printf("クライアント(%d)との接続が切れました\n", _dstSocket);
-					close(_dstSocket);
-					return;
-				}
-				
-				printf("変換前:[%s] ==> ", buf);
-				for (int i=0; i< stSize; i++){ // bufの中の小文字を大文字に変換
-					if ( isalpha(buf[i])) {
-					buf[i] = toupper(buf[i]);
-					}
-				}
-				
-				// クライアントに返信
-				stSize = send(_dstSocket,
-							buf,
-							strlen(buf)+1,
-							0);
-				
-				if ( stSize != strlen(buf)+1) {
-					printf("send error.\n");
-					printf("クライアントとの接続が切れました\n");
-					close(_dstSocket);
-					return;
-				}
-				printf( "変換後:[%s] \n" ,buf);
-			}
-		}
-};
 ///////////////////////////////////////////////////////////////////////////////
 // main
 ///////////////////////////////////////////////////////////////////////////////
+//memory解放処理するためにConnectClient*のList変数で管理
+typedef std::vector<ConnectClient*> connectclient_vector;
+connectclient_vector connectclient_vec;
+
 int main(int argc, char* argv[])
 {
 	//BoostLog有効化
@@ -258,6 +151,8 @@ int main(int argc, char* argv[])
     //------------------------------------------------------
     // デーモン化後の処理
     //------------------------------------------------------
+	//初期化
+	SetServerStatus(0);
 
 	//Startプロセス通信用の名前つきパイプを書込専用で開き
     if ((fd_start = open(PIPE_START, O_WRONLY)) == -1)
@@ -334,7 +229,8 @@ int main(int argc, char* argv[])
 	int srcSocket;
 	srcSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if ( srcSocket == -1 ) {
-		printf("socket error\n");
+		//printf("socket error\n");
+		write_log(4, "socket error\n");
 		return -1;
 	}
 
@@ -344,7 +240,8 @@ int main(int argc, char* argv[])
 	//setsockoptは-1だと失敗
 	nRet = setsockopt(srcSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 	if ( nRet == -1 ) {
-		printf("setsockopt error\n");
+		//printf("setsockopt error\n");
+		write_log(4, "setsockopt error\n");
 		return -1;
 	}
 
@@ -352,14 +249,16 @@ int main(int argc, char* argv[])
 				(struct sockaddr *)&srcAddr,
 				sizeof(srcAddr));
 	if ( nRet == -1 ) {
-		printf("bind error\n");
+		//printf("bind error\n");
+		write_log(4, "bind error\n");
 		return -1;
 	}
 
 	// クライアントからの接続待ち
 	nRet = listen(srcSocket, 1);
 	if ( nRet == -1 ) {
-		printf("listen error\n");
+		//printf("listen error\n");
+		write_log(4, "listen error\n");
 		return -1;
 	}
 
@@ -380,8 +279,8 @@ int main(int argc, char* argv[])
 		tval.tv_sec  = SELECT_TIMER_SEC	;	// time_t  秒
     	tval.tv_usec = SELECT_TIMER_USEC;	// suseconds_t  マイクロ秒
 				
-		printf("新規接続とクライアントから書き込みを待っています.\n");	
-
+		//printf("新規接続とクライアントから書き込みを待っています.\n");	
+		write_log(2, "新規接続とクライアントから書き込みを待っています.\n");
 
 		//msgrsv:引数でmsgflg に IPC_NOWAIT
 
@@ -402,11 +301,13 @@ int main(int argc, char* argv[])
 				continue;
 			}else{
 				// selectが異常終了
-				perror("select");
+				// perror("select");
+				write_log(4, "select error\n");
 				exit( 1 );
 			}
 	  	}else if( nRet == 0 ){
-			printf("selectでタイムアウト発生\n");
+			//printf("selectでタイムアウト発生\n");
+			write_log(2, "selectでタイムアウト発生\n");
 			continue;
   		}
 
@@ -419,7 +320,8 @@ int main(int argc, char* argv[])
 
   		 // 新規のクライアントから接続要求がきた
   		if ( FD_ISSET(srcSocket, &readfds) ) {
-  			printf("クライアント接続要求を受け付けました\n");
+  			//printf("クライアント接続要求を受け付けました\n");
+			write_log(2, "クライアント接続要求を受け付けました\n");
 
 			struct sockaddr_in dstAddr;
 			int dstAddrSize = sizeof(dstAddr);
@@ -429,11 +331,15 @@ int main(int argc, char* argv[])
 								(struct sockaddr *)&dstAddr, 
 								(socklen_t *)&dstAddrSize);
 			if ( dstSocket == -1 ) {
-			  	perror("accept");
+			  	// perror("accept");
+				  write_log(4, "accept error\n");
 			  	continue;	
 			}
 			
-			printf("[%s]から接続を受けました. socket=%d\n",
+			// printf("[%s]から接続を受けました. socket=%d\n",
+			// 		inet_ntoa(dstAddr.sin_addr),
+			// 		dstSocket);
+			write_log(2, "[%s]から接続を受けました. socket=%d\n",
 					inet_ntoa(dstAddr.sin_addr),
 					dstSocket);
 
@@ -451,52 +357,71 @@ int main(int argc, char* argv[])
 
 			//プールスレッドにバインド
 			ConnectClient* h = new ConnectClient(dstSocket);
-  			//TODO;memory解放処理するためにConnectClient*のList変数で管理する
-			  //TODO;ConnectClientに切断フラグを追加する
-			  //TODO;SELECT_TIMER_SECごとのwhileループでチェックする
+  			//vectorに追加
+			connectclient_vec.push_back(h);
 
-  			printf("*** h=%p, dstSocket=%d\n",h, dstSocket);//konishi
+  			//printf("*** h=%p, dstSocket=%d\n",h, dstSocket);//konishi
+			write_log(2, "*** h=%p, dstSocket=%d\n",h, dstSocket);
 			tp.post(boost::bind(&ConnectClient::func, h));
   		}
+
+		//不要なConnectClientを解放
+		//for(const auto& item: connectclient_vec) {
+		for(auto it = connectclient_vec.begin(); it != connectclient_vec.end();it++) {
+			std::lock_guard<std::mutex> lk((*it)->m_mutex);
+			write_log(2, "*** h=%p, flag=%d\n", *it, (*it)->_live);
+
+			if((*it)->_live == false) {
+				connectclient_vec.erase(it);//要素削除
+				delete *it;//memory解放
+			}
+		}
 	}
 
 	// 接続待ちソケットのクローズ
 	nRet = close(srcSocket);
 	if ( nRet == -1 ) {
-		printf("close error\n");
+		//printf("close error\n");
+		write_log(4, "close error\n");
 	}
 	
 	//workerスレッドをクローズ
-	server_status = 1;
+	// std::lock_guard<std::mutex> lk(server_status_Mutex);
+	// server_status = 1;
+	SetServerStatus(1);
 
 	//sigalerm発行
 	//ToDo:windowdだとイベントを起こす関数があるはずなのでそれを使い、それをコールバック処理でthreadを殺しにいく
 	alarm(60);
-	printf("alarmがセットされました\n");
+	//printf("alarmがセットされました\n");
+	write_log(2, "alarmがセットされました\n");
 
 	int past_seconds = 0;
 
 	while(1){
 		sleep(2);
 		past_seconds += 2;
-		printf("%d秒経過しました\n", past_seconds);
+		//printf("%d秒経過しました\n", past_seconds);
+		write_log(2, "%d秒経過しました\n", past_seconds);
 
-		bool result = threadid_vec.empty();
+		bool result = connectclient_vec.empty();
 		if(result == true){
-			printf("ループを抜けます\n");
+			//printf("ループを抜けます\n");
+			write_log(2, "ループを抜けます\n");
 			break;
 		}
 	}
 
-	printf("正常終了します\n");
+	//printf("正常終了します\n");
+	write_log(2, "正常終了します\n");
 	return(0);
 }
 
 void sigalrm_handler(int signo, thread_pool _tp)
 {
-	char work[256];
-	sprintf(work, "sig_handler started. signo=%d\n", signo);
-
+	// char work[256];
+	// sprintf(work, "sig_handler started. signo=%d\n", signo);
+	write_log(2, "sig_handler started. signo=%d\n", signo);
 	//pthreadid_vecに入っているスレッドidを直指定してスレッドを殺しにいく
 	// C++11 Range based for
 //	for(const auto& item: pthreadid_vec) {
@@ -514,14 +439,17 @@ void sigalrm_handler(int signo, thread_pool _tp)
 
 	//ワーカースレッド強制終了します
 	_tp.terminateAllThreads();
+	write_log(2, "ワーカースレッド強制終了しました\n");
 	return;
 }
 
 void sigusr2_handler(int signo){
-	char work[256];
-	sprintf(work, "sig_handler started. signo=%d\n", signo);
+	// char work[256];
+	// sprintf(work, "sig_handler started. signo=%d\n", signo);
+	write_log(2, "sig_handler started. signo=%d\n", signo);
 
 	main_thread_flag = false;
-	printf("main_thread_flagを書き換えました\n");
+	//printf("main_thread_flagを書き換えました\n");
+	write_log(2, "main_thread_flagを書き換えました\n");
 	return;
 }

@@ -24,7 +24,7 @@ $(TARGET4) : Start.o TcpCommon.o semlock.o BoostLog.o
 	g++ -o $(TARGET4) Start.o TcpCommon.o semlock.o BoostLog.o -lpthread -lboost_log -lboost_thread -lboost_system
 
 #TcpServer.o : TcpServer.cpp BoostLog.h
-TcpServer.o : TcpServer.cpp BoostLog.h thread_pool.h TcpCommon.h
+TcpServer.o : TcpServer.cpp BoostLog.h thread_pool.h TcpCommon.h ConnectClient.h
 	g++ -c $(CCFLAG) TcpServer.cpp
 
 TcpClient.o : TcpClient.cpp
@@ -39,7 +39,7 @@ BoostLog.o : BoostLog.cpp BoostLog.h
 Start.o : Start.cpp semlock.h TcpCommon.h
 	g++ -c $(CCFLAG) Start.cpp
 
-semlock.o : semlock.cpp semlock.h
+semlock.o : semlock.cpp semlock.h BoostLog.h
 	g++ -c $(CCFLAG) semlock.cpp
 
 TcpCommon.o : TcpCommon.cpp TcpCommon.h BoostLog.h

@@ -7,7 +7,7 @@
 #include <unistd.h>	
 #include <string>
 #include <string.h>
-#include <msgpack.hpp>
+//#include <msgpack.hpp>
 
 #define PIPE_START "/tmp/fifo_start"//Startに完了報告する名前付きパイプ
 #define PIPE_STOP "/tmp/fifo_stop"//Stopに完了報告する名前付きパイプ
@@ -21,6 +21,10 @@
 #define TMP_LOGFILE "/tmp/log"
 #define QUE_NAME "/mq_stop_observer"
 #define PROJ_HOME "/home/tateda/EventServer"
+#define CLIENT_MAX	32000 //マシーンリソースに依存する数
+//#define CLIENT_MAX	2 //マシーンリソースに依存する数
+#define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
+#define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)
 
 ////強制起動オプション用
 //#define TXT_SERVER_PID  "/tmp/EventServer.txt"
@@ -91,6 +95,8 @@
 //int DebugLogForDaemon(const char* message);
 int exist_process (std::string macro);
 int get_pid(std::string macro);
+int GetServerStatus();
+int SetServerStatus(int status);
 //int ForcelyKillProcess(std::string macro);
 //int err_notify(int fd_num, char* err_detail);
 //int err_notify_log(int fd_num, char* err_detail, int logpipe);

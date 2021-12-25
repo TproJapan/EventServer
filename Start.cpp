@@ -134,8 +134,9 @@ int main(int argc, char* argv[])
 
     //TcpServer立ち上がり完了報告を読取
     bool flag = true;
+
     while (flag == true){
-        if((nbyte = read(fd_start, buff, BUFSIZ)) > 0){
+        if((nbyte = read(fd_start, buff, sizeof(buff))) > 0){
             write(fileno(stdout), buff, nbyte);
 			printf("\n");
             flag = false;
