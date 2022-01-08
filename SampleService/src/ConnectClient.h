@@ -7,6 +7,9 @@ class ConnectClient {
 	SOCKET _socket;
 	CSocketMap* _pSocketMap;
 public:
+	bool _live;//生存管理フラグ
+	std::mutex	m_mutex;//生存管理フラグ用排他
+public:
 	ConnectClient(SOCKET& tmpsocket, CSocketMap* tmpSocketMapPtr);
 	~ConnectClient();
 

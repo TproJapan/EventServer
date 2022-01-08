@@ -16,7 +16,7 @@ void ErrorHandler(const char* s, DWORD err);
 #define SERVICE_DIPLAY_NAME  L"SampleServ"
 #define SERVICE_DETAIL  L"テスト用のサービスです"
 //#define SERVICE_EXE_FILEPATH  L"C:\\Users\\zx9y-\\source\\repos\\SampleService\\x64\\Debug\\SampleService.exe"
-#define SERVICE_EXE_FILEPATH  L"C:\\Users\\suguru.tateda\\VSProjects\\SampleService211107\\x64\\Debug\\SampleService.exe"
+#define SERVICE_EXE_FILEPATH  L"C:\\Users\\suguru.tateda\\VSProjects\\EventServer\\SampleService\\x64\\Debug\\SampleService.exe"
 ///////////////////////////////////////////////////////////////////////////////
 // メイン処理
 // install SampleService "SampleServ" C:\Users\zx9y-\source\repos\SampleService\Debug\SampleService.exe

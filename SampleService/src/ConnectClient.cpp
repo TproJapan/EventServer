@@ -15,6 +15,7 @@ ConnectClient::ConnectClient(SOCKET& tmpsocket, CSocketMap* tmpSocketMapPtr)
 {
 	_socket = tmpsocket;
 	_pSocketMap = tmpSocketMapPtr;
+	_live = true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -35,7 +36,7 @@ void ConnectClient::func()
 	//socketとイベント変数を、どの観点のイベントで反応させるかを紐づけ
 	int nRet = WSAEventSelect(_socket, tmpEvent, FD_READ | FD_CLOSE);
 	if (nRet == SOCKET_ERROR) {
-		printf("WSAEventSelect error. (%ld)\n", WSAGetLastError());
+		//printf("WSAEventSelect error. (%ld)\n", WSAGetLastError());
 		write_log(5, "WSAEventSelect error. (%ld)\n", WSAGetLastError());
 		return;
 	}
@@ -54,7 +55,7 @@ void ConnectClient::func()
 		//強制終了用のinterruption_pointを張る
 		boost::this_thread::interruption_point();
 
-		printf("書き込みを待っています.\n");
+		//printf("書き込みを待っています.\n");
 		write_log(2, "書き込みを待っています.\n");
 		DWORD worker_dwTimeout = TIMEOUT_MSEC;
 
@@ -66,18 +67,18 @@ void ConnectClient::func()
 			                                       FALSE);
 		if (worker_nRet == WSA_WAIT_FAILED)
 		{
-			printf("WSAWaitForMultipleEvents wait error. (%ld)\n", WSAGetLastError());
+			//printf("WSAWaitForMultipleEvents wait error. (%ld)\n", WSAGetLastError());
 			write_log(5, "WSAWaitForMultipleEvents wait error. (%ld)\n", WSAGetLastError());
 			break;
 		}
 
 		if (worker_nRet == WSA_WAIT_TIMEOUT) {
-			printf("タイムアウト発生です!!!\n");
+			//printf("タイムアウト発生です!!!\n");
 			write_log(2, "タイムアウト発生です!!!\n");
 			continue;
 		}
 
-		printf("WSAWaitForMultipleEvents nRet=%ld\n", worker_nRet);
+		//printf("WSAWaitForMultipleEvents nRet=%ld\n", worker_nRet);
 		write_log(2, "WSAWaitForMultipleEvents nRet=%ld\n", worker_nRet);
 
 		// イベントを検知したHANDLE
@@ -87,7 +88,7 @@ void ConnectClient::func()
 		WSANETWORKEVENTS events;
 		if (WSAEnumNetworkEvents(_socket, workerHandle, &events) == SOCKET_ERROR)
 		{
-			printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
+			//printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
 			write_log(5, "WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
 			break;
 		}
@@ -107,9 +108,14 @@ void ConnectClient::func()
 		}
 	}
 
+	//while抜けたらフラグ倒す
+	std::lock_guard<std::mutex> lk(m_mutex);
+	_live = false;
+
 	deleteConnection(*pSocketMap, tmpEvent);
 	delete this;
-	printf("Finished Thead\n");
+
+	//printf("Finished Thead\n");
 	write_log(2, "Finished Thead\n");
 }
 
@@ -119,22 +125,22 @@ void ConnectClient::func()
 bool ConnectClient::recvHandler(CSocketMap& socketMap, HANDLE& hEvent)
 {
 	SOCKET sock = socketMap.getSocket(hEvent);
-	printf("クライアント(%ld)からデータを受信\n", sock);
+	//printf("クライアント(%ld)からデータを受信\n", sock);
 	write_log(2, "クライアント(%ld)からデータを受信\n", sock);
 
 	char buf[1024];
 	int stSize = recv(sock, buf, sizeof(buf), 0);
 	if (stSize <= 0) {
-		printf("recv error.\n");
+		//printf("recv error.\n");
 		write_log(4, "recv error.\n");
-		printf("クライアント(%ld)との接続が切れました\n", sock);
+		//printf("クライアント(%ld)との接続が切れました\n", sock);
 		write_log(4, "クライアント(%ld)との接続が切れました\n", sock);
 
 		deleteConnection(socketMap, hEvent);
 		return true;
 	}
 
-	printf("変換前:[%s] ==> ", buf);
+	//printf("変換前:[%s] ==> ", buf);
 	write_log(2, "変換前:[%s] ==> ", buf);
 
 	for (int i = 0; i < (int)stSize; i++) { // bufの中の小文字を大文字に変換
@@ -146,16 +152,16 @@ bool ConnectClient::recvHandler(CSocketMap& socketMap, HANDLE& hEvent)
 	// クライアントに返信
 	stSize = send(sock, buf, strlen(buf) + 1, 0);
 	if (stSize != strlen(buf) + 1) {
-		printf("send error.\n");
+		//printf("send error.\n");
 		write_log(4, "send error.\n");
-		printf("クライアントとの接続が切れました\n");
+		//printf("クライアントとの接続が切れました\n");
 		write_log(4, "クライアントとの接続が切れました\n");
 
 		deleteConnection(socketMap, hEvent);
 		return true;
 	}
 
-	printf("変換後:[%s] \n", buf);
+	//printf("変換後:[%s] \n", buf);
 	write_log(2, "変換後:[%s] \n", buf);
 	return true;
 }
@@ -167,7 +173,7 @@ bool ConnectClient::closeHandler(CSocketMap& socketMap, HANDLE& hEvent)
 {
 	SOCKET sock = socketMap.getSocket(hEvent);
 
-	printf("クライアント(%d)との接続が切れました\n", sock);
+	//printf("クライアント(%d)との接続が切れました\n", sock);
 	write_log(4, "クライアント(%d)との接続が切れました\n", sock);
 	deleteConnection(socketMap, hEvent);
 	return true;

@@ -2,9 +2,7 @@
 // WinSockを使用したTCPサーバー
 // Boost.Asioでスレッドプール
 ///////////////////////////////////////////////////////////////////////////////
-#pragma comment(lib, "ws2_32.lib")
-#pragma warning(disable:4996)
-#include "TcpServer.h"
+#pragma once
 #include <boost/asio.hpp>
 #include "thread_pool.h"
 #include "ConnectClient.h"
@@ -13,10 +11,12 @@
 #include "CommonVariables.h"
 #include "BoostLog.h"
 #include <tchar.h>
+#include "TcpServer.h"
 
 ///////////////////////////////////////////////////////////////////////////////
 // メイン処理
 ///////////////////////////////////////////////////////////////////////////////
+
 int Tcpserver()
 {
 	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
@@ -150,7 +150,13 @@ int Tcpserver()
 	//pSocketMap->addSocket(NULL,eventConnect);//名前付きパイプに対する接続待ちハンドルには対応ソケットは無いのでNULL
 
 	while (1) {
-		if (checkServerStatus() == 1) break;
+		if (checkServerStatus() == 1) {
+			write_log(2, "メインループを抜けます.\n");
+			break;
+		}
+
+		// Vectorのゴミ掃除
+		cleanupConnectClientVec(connectclient_vec);
 
 		//イベントを配列で管理
 		const int mainEventNum = 2;
@@ -227,7 +233,7 @@ int Tcpserver()
 			if (strcmp(buf, "stop") == 0) {
 				std::lock_guard<std::mutex> lk(server_status_Mutex);
 				server_status = 1;
-				printf("サーバ停止要求を受信しました\n");
+				//printf("サーバ停止要求を受信しました\n");
 				write_log(2, "サーバ停止要求を受信しました\n");
 			}
 
@@ -310,7 +316,30 @@ int Tcpserver()
 
 		Sleep(duration);
 	}
-	
+
+	//Vectorカウント一定回数定期実行
+	count = 10;
+	duration = 2000;
+	while (1) {
+		// Vectorのゴミ掃除
+		cleanupConnectClientVec(connectclient_vec);
+		bool result = connectclient_vec.empty();
+
+		if (result == true) {
+			write_log(2, "connectclient_vecがempty。ループを抜けます\n");
+			break;
+		}
+
+		count--;
+
+		if (count <= 0) {
+			write_log(2, "タイムアップ。connectclient_vec残%d。強制終了します\n", connectclient_vec.size());
+			break;
+		}
+
+		Sleep(duration);
+	}
+
 	//ソケットマップ開放
 	delete pSocketMap;
 
@@ -327,3 +356,31 @@ void StopTcpServer()
 	std::lock_guard<std::mutex> lk(server_status_Mutex);
 	server_status = 1;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+// ソケット切断済みのconnect_clientの解放処理
+///////////////////////////////////////////////////////////////////////////////
+int cleanupConnectClientVec(connectclient_vector& vec)
+{
+	int deleteCount = 0;
+	write_log(2, "konishi *** ゴミ掃除開始 ***");
+
+	auto it = vec.begin();
+	while (it != vec.end()) {
+		std::lock_guard<std::mutex> lk((*it)->m_mutex);
+		write_log(2, "*** h=%p, flag=%d", *it, (*it)->_live);
+		if ((*it)->_live == false) {
+			write_log(2, "konishi *** h=%p deleted", *it);
+			delete* it;
+			it = vec.erase(it);
+			deleteCount++;
+		}
+		else {
+			it++;
+		}
+	}
+
+	write_log(2, "konishi *** deleteCount = %d ***", deleteCount);
+	return deleteCount;
+}
+
