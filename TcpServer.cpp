@@ -55,13 +55,16 @@ void sigusr2_handler(int signo);
 //memory解放処理するためにConnectClient*のList変数で管理
 typedef std::vector<ConnectClient*> connectclient_vector;
 connectclient_vector connectclient_vec;
+int cleanupConnectClientVec(connectclient_vector& vec); // konishi
+
 
 int main(int argc, char* argv[])
 {
 	//BoostLog有効化
 	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
 	logging::add_common_attributes();
-
+	write_log(4, "konishi : main started \n");// konishi
+	
 	char work[256];
     pid_t s_pid;
 	int nPortNo;
@@ -128,12 +131,14 @@ int main(int argc, char* argv[])
     // カレントディレクトリ変更.
     // ルートディレクトリに移動.(デーモンプロセスはルートディレクトリを起点にして作業するから)
     chdir("/");
-
+	write_log(4, "konishi : after cddir \n");// konishi
+	
     // 親から引き継いだ全てのファイルディスクリプタのクローズ.
     for(int i = 0; i < MAXFD; i++){
         close(i);
     }
 
+	write_log(4, "konishi : before open /dev/null \n");// konishi
     // stdin,stdout,stderrをdev/nullでオープン.
     // 単にディスクリプタを閉じるだけだとこれらの出力がエラーになるのでdev/nullにリダイレクトする.
     if((fddevnull = open("/dev/null", O_RDWR, 0) != -1)){
@@ -152,8 +157,10 @@ int main(int argc, char* argv[])
     // デーモン化後の処理
     //------------------------------------------------------
 	//初期化
+	write_log(4, "konishi : before SetServerStatus \n");// konishi
 	SetServerStatus(0);
-
+	write_log(4, "konishi : after SetServerStatus \n");// konishi
+	
 	//Startプロセス通信用の名前つきパイプを書込専用で開き
     if ((fd_start = open(PIPE_START, O_WRONLY)) == -1)
     {
@@ -163,17 +170,21 @@ int main(int argc, char* argv[])
 
 	//Startへプロセスid送信
 	char buff[16];
+	sprintf(buff, "pid = %d", getpid());// konishi
 	if (write(fd_start, buff, strlen(buff)) != strlen(buff))
 	{
 		write_log(4, "write PIPE_START failed\n");
 		close(fd_start);
 		return -1;
 	}
-
+	write_log(4, "konishi : after pipe wirite \n");// konishi
+	
 	//スレッドプール作成
 	boost::asio::io_service io_service;
 	thread_pool tp(io_service, CLIENT_MAX);
-
+	
+	write_log(4, "konishi : after thread_;pool \n");// konishi
+	
 	///////////////////////////////////
     // シグナルハンドラの設定
     ///////////////////////////////////
@@ -189,14 +200,17 @@ int main(int argc, char* argv[])
     int nRet = 0;
 
     //シグナルマスクの初期化
+	write_log(4, "konishi : before sigemptyset \n");// konishi
 	nRet = sigemptyset(&sigset);
     if( nRet != 0 ) return -1;
 
     //Control-C(SIGINT)で割り込まれないようにする
+	write_log(4, "konishi : before sigaddset \n");// konishi
     nRet = sigaddset(&sigset, SIGINT);
     if( nRet != 0 ) return -1;
     act.sa_mask = sigset;
 
+	write_log(4, "konishi : Before sigaction \n");// konishi
 	///////////////////////////////////
     // SIGALRM捕捉
     ///////////////////////////////////
@@ -215,6 +229,8 @@ int main(int argc, char* argv[])
 	nRet = sigaction(SIGUSR2,&act,NULL);
 	if ( nRet == -1 ) err(EXIT_FAILURE, "sigaction(siguer2) error");
 
+	write_log(4, "konishi : After sigaction \n");// konishi
+	
 	///////////////////////////////////
     // socketの設定
     ///////////////////////////////////
@@ -261,10 +277,13 @@ int main(int argc, char* argv[])
 		write_log(4, "listen error\n");
 		return -1;
 	}
-
+	
 	while(main_thread_flag) {
 	 	int dstSocket = -1;		// クライアントとの通信ソケット
 
+		// Vectorのゴミ掃除
+		cleanupConnectClientVec(connectclient_vec); // konishi
+		
 		///////////////////////////////////////
 		// selectで監視するソケットの登録
 		///////////////////////////////////////
@@ -358,7 +377,7 @@ int main(int argc, char* argv[])
 			//プールスレッドにバインド
 			ConnectClient* h = new ConnectClient(dstSocket);
   			//vectorに追加
-			connectclient_vec.push_back(h);
+			connectclient_vec.push_back(h); //konishi
 
   			//printf("*** h=%p, dstSocket=%d\n",h, dstSocket);//konishi
 			write_log(2, "*** h=%p, dstSocket=%d\n",h, dstSocket);
@@ -367,15 +386,38 @@ int main(int argc, char* argv[])
 
 		//不要なConnectClientを解放
 		//for(const auto& item: connectclient_vec) {
+#if 0
 		for(auto it = connectclient_vec.begin(); it != connectclient_vec.end();it++) {
 			std::lock_guard<std::mutex> lk((*it)->m_mutex);
 			write_log(2, "*** h=%p, flag=%d\n", *it, (*it)->_live);
 
 			if((*it)->_live == false) {
+				write_log(2, "konishi before :*** h=%p deleted\n", *it);
 				connectclient_vec.erase(it);//要素削除
+				write_log(2, "konishi after  :*** h=%p deleted\n", *it);
 				delete *it;//memory解放
 			}
 		}
+#endif
+			
+#if 0
+		// ここでゴミ掃除を行うと新規クライアントからの接続受付時しか処理されない
+		write_log(2, "konishi *** ゴミ掃除開始 ***\n");
+		auto it = connectclient_vec.begin();
+		while( it != connectclient_vec.end() ) {
+			std::lock_guard<std::mutex> lk((*it)->m_mutex);
+			write_log(2, "*** h=%p, flag=%d\n", *it, (*it)->_live);
+			if((*it)->_live == false) {
+				delete *it;
+				it = connectclient_vec.erase(it);
+				write_log(2, "konishi after  :*** h=%p deleted\n", *it);
+			}
+			else{
+				it++;
+			}
+		}
+#endif
+			
 	}
 
 	// 接続待ちソケットのクローズ
@@ -404,6 +446,8 @@ int main(int argc, char* argv[])
 		//printf("%d秒経過しました\n", past_seconds);
 		write_log(2, "%d秒経過しました\n", past_seconds);
 
+		// Vectorのゴミ掃除
+		cleanupConnectClientVec(connectclient_vec);
 		bool result = connectclient_vec.empty();
 		if(result == true){
 			//printf("ループを抜けます\n");
@@ -453,3 +497,32 @@ void sigusr2_handler(int signo){
 	write_log(2, "main_thread_flagを書き換えました\n");
 	return;
 }
+	
+///////////////////////////////////////////////////////////////////////////////
+// ソケット切断済みのconnect_clientの解放処理
+///////////////////////////////////////////////////////////////////////////////
+int cleanupConnectClientVec(connectclient_vector& vec)
+{
+	int deleteCount = 0;
+	write_log(2, "konishi *** ゴミ掃除開始 ***");
+	
+	auto it = vec.begin();
+	while( it != vec.end() ) {
+		std::lock_guard<std::mutex> lk((*it)->m_mutex);
+		write_log(2, "*** h=%p, flag=%d", *it, (*it)->_live);
+		if((*it)->_live == false) {
+			write_log(2, "konishi *** h=%p deleted", *it);
+			delete *it;
+			it = vec.erase(it);
+			deleteCount++;
+		}
+		else{
+			it++;
+		}
+	}
+	
+	write_log(2, "konishi *** deleteCount = %d ***", deleteCount);
+	return deleteCount;
+}
+
+	

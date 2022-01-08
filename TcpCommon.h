@@ -23,7 +23,7 @@
 #define PROJ_HOME "/home/tateda/EventServer"
 #define CLIENT_MAX	32000 //マシーンリソースに依存する数
 //#define CLIENT_MAX	2 //マシーンリソースに依存する数
-#define SELECT_TIMER_SEC	3			// selectのタイマー(秒)
+#define SELECT_TIMER_SEC	30			// selectのタイマー(秒)
 #define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)
 
 ////強制起動オプション用

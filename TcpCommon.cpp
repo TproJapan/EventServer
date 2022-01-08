@@ -8,10 +8,15 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <unistd.h>
-#include "BoostLog.h"
+// #include "BoostLog.h"
+
+#include <boost/system/error_code.hpp>
+
+
 #include "TcpCommon.h"
 #include <syslog.h>
 #include <string>
+// #include <mutex>
 
 int server_status; //サーバーステータス(0:起動, 1:シャットダウン)
 std::mutex	server_status_Mutex;
@@ -22,7 +27,7 @@ int GetServerStatus(){
 }
 
 int SetServerStatus(int status){
-	std::lock_guard<std::mutex> lk(server_status_Mutex);
+	std::lock_guard<std::mutex> lock(server_status_Mutex);
 	server_status = status;
 	return server_status;
 }	
@@ -217,11 +222,11 @@ int exist_process (std::string macro)
 	pid_t pid = get_pid(macro);
 	if(pid == -1){
 		sprintf(buff, "pid file is no exist. (%s)\n", macro.c_str());
-		write_log(4, buff);
+		// write_log(4, buff);
 		return -1;
 	}else if(pid == -2){
 		sprintf(buff, "pid file is blank. (%s)\n", macro.c_str());
-		write_log(4, buff);
+		// write_log(4, buff);
 		return -1;		
 	}
 	sprintf(buff, "%d", pid);
@@ -236,7 +241,7 @@ int exist_process (std::string macro)
 		char *cstr = new char[message.length() + 1];//char領域メモリを新規作成
 		strcpy(cstr, message.c_str());//コピー
 		//sprintf(buff, "pid file is no exist. (%s)\n", macro.c_str());
-		write_log(4, cstr);
+		// write_log(4, cstr);
 		delete [] cstr;//メモリ解放
 		return (1);
 	}
@@ -246,7 +251,7 @@ int exist_process (std::string macro)
 	message += " is no exist!\n";//文字列連結
 	char *cstr = new char[message.length() + 1];//char領域メモリを新規作成
 	strcpy(cstr, message.c_str());//コピー
-	write_log(2, cstr);
+	// write_log(2, cstr);
 	delete [] cstr;//メモリ解放
 	return (0);
 }
@@ -260,7 +265,7 @@ int get_pid(std::string macro){
 	fp = fopen(macro.c_str(), "r");
 	if(fp == NULL){
 		//perror("Open PID File Failed!\n");
-		write_log(4, "Open PID File Failed!\n");
+		// write_log(4, "Open PID File Failed!\n");
 		return -1;
 	}
 	
@@ -270,7 +275,7 @@ int get_pid(std::string macro){
 	}else{
 		char tmpbuff[1024];
 		sprintf(tmpbuff,"buff = (%s)\n", buff);
-		write_log(2, tmpbuff);
+		// write_log(2, tmpbuff);
 	}
 	pid = atoi(buff);
 	fclose(fp);
