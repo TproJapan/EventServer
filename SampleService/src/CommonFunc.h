@@ -5,4 +5,4 @@
 
 //プロトタイプ宣言
 extern int checkServerStatus();
-extern bool acceptHandler(CSocketMap& socketMap, HANDLE& hEvent, thread_pool& tp);
+extern bool acceptHandler(SOCKET& sock, thread_pool& tp);

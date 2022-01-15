@@ -410,10 +410,15 @@ VOID StopService()
 	//Tcpサーバ停止関数呼び出し
 	StopTcpServer();
 	logObj.log("Tcpサーバ停止を開始しました");
+	//Sleep(40000);
+	//logObj.log("Sleepを開始しました");
+	//WaitForSingleObject(:****:);
 
 	// ServiceMain関数が制御を返すことができるようにするために
 	// ServiceMain関数が完了するのを防止しているイベントをセットする。
+	//logObj.log("SetEvent開始");
 	SetEvent(terminateEvent);
+	//logObj.log("SetEvent終了");
 
 	logObj.log("%s ended.", __FUNCTION__);
 	return;
