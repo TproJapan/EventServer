@@ -36,7 +36,7 @@ int Tcpserver()
 	thread_pool tp(io_service, CLIENT_MAX);
 
 	//pSocketMap = CSocketMap::getInstance();
-	
+
 	// パイプ名の組み立て
 	char pipeName[80];
 	wsprintf((LPWSTR)pipeName, (LPCWSTR)PIPE_NAME, ".");
@@ -53,8 +53,8 @@ int Tcpserver()
 		(LPSECURITY_ATTRIBUTES)NULL);	// セキュリティ属性
 	if (hPipe == INVALID_HANDLE_VALUE) {
 		//printf("CreateNamedPipe error. (%ld)\n", GetLastError());
-		write_log(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__ , __LINE__, __func__);
-		
+		write_log(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+
 		return -1;
 	}
 
@@ -64,7 +64,7 @@ int Tcpserver()
 	HANDLE eventConnect = CreateEvent(0, FALSE, FALSE, 0);
 	if (eventConnect == INVALID_HANDLE_VALUE) {
 		//printf("CreateNamedPipe error. (%ld)\n", GetLastError());
-		write_log(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__ , __LINE__, __func__);
+		write_log(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 		return -2;
 	}
 	overlappedConnect.hEvent = eventConnect;
@@ -75,12 +75,12 @@ int Tcpserver()
 	BOOL bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
 	if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {	// konishi
 		//printf("ConnectNamedPipe error. (%ld)\n", GetLastError());
-		write_log(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__ , __LINE__, __func__);
+		write_log(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 		return -3;
 	}
-	
+
 	// ポート番号の設定
-	int nPortNo =  5000;            // ポート番号
+	int nPortNo = 5000;            // ポート番号
 //	nPortNo = atol(argv[1]);
 
 	// WINSOCKの初期化(これやらないとWinSock2.hの内容が使えない)
@@ -89,7 +89,7 @@ int Tcpserver()
 	wVersionRequested = MAKEWORD(2, 0);
 	if (WSAStartup(wVersionRequested, &WsaData) != 0) {
 		//printf("WSAStartup() error. code=%d\n", WSAGetLastError());
-		write_log(5, "WSAStartup() error. code=%d, %s %d %s\n", WSAGetLastError(), __FILENAME__ , __LINE__, __func__);
+		write_log(5, "WSAStartup() error. code=%d, %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return -4;
 	}
 
@@ -98,14 +98,14 @@ int Tcpserver()
 	srcSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (srcSocket == -1) {
 		//printf("socket error\n");
-		write_log(5, "socket error, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+		write_log(5, "socket error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		return -5;
 	}
 
 	HANDLE hEvent = WSACreateEvent();
 	if (hEvent == INVALID_HANDLE_VALUE) {
 		//printf("WSACreateEvent error\n");
-		write_log(5, "WSACreateEvent error, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+		write_log(5, "WSACreateEvent error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		return -6;
 	}
 
@@ -115,7 +115,7 @@ int Tcpserver()
 	if (nRet == SOCKET_ERROR)
 	{
 		//printf("WSAEventSelect error. (%ld)\n", WSAGetLastError());
-		write_log(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__ , __LINE__, __func__);
+		write_log(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		WSACleanup();
 		return -7;
 	}
@@ -131,10 +131,10 @@ int Tcpserver()
 	srcAddr.sin_addr.s_addr = INADDR_ANY;
 
 	// ソケットのバインド
-	nRet = bind(srcSocket,(struct sockaddr*)&srcAddr,sizeof(srcAddr));
+	nRet = bind(srcSocket, (struct sockaddr*)&srcAddr, sizeof(srcAddr));
 	if (nRet == SOCKET_ERROR) {
 		//printf("bind error. (%ld)\n", WSAGetLastError());
-		write_log(5, "bind error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__ , __LINE__, __func__);
+		write_log(5, "bind error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return -8;
 	}
 
@@ -142,7 +142,7 @@ int Tcpserver()
 	nRet = listen(srcSocket, 1);
 	if (nRet == SOCKET_ERROR) {
 		//printf("listen error. (%ld)\n", WSAGetLastError());
-		write_log(5, "listen error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__ , __LINE__, __func__);
+		write_log(5, "listen error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return -9;
 	}
 
@@ -151,7 +151,7 @@ int Tcpserver()
 
 	while (1) {
 		if (checkServerStatus() == 1) {
-			write_log(2, "メインループを抜けます., %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+			write_log(2, "メインループを抜けます., %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -166,7 +166,7 @@ int Tcpserver()
 		eventList[1] = eventConnect;//名前付きパイプ
 
 		//printf("新規接続を待っています.\n");
-		write_log(2, "新規接続を待っています., %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+		write_log(2, "新規接続を待っています., %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		//DWORD dwTimeout = WSA_INFINITE;	// 無限待ち
 		DWORD dwTimeout = TIMEOUT_MSEC;
 
@@ -174,26 +174,26 @@ int Tcpserver()
 		if (nRet == WSA_WAIT_FAILED)
 		{
 			//printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
-			write_log(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__ , __LINE__, __func__);
+			write_log(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		if (nRet == WSA_WAIT_TIMEOUT) {
 			//printf("タイムアウト発生!!!\n");
-			write_log(2, "タイムアウト発生!!!, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+			write_log(2, "タイムアウト発生!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
 		//printf("WSAWaitForMultipleEvents nRet=%ld\n", nRet);
-		write_log(2, "WSAWaitForMultipleEvents nRet=%ld, %s %d %s\n", nRet, __FILENAME__ , __LINE__, __func__);
+		write_log(2, "WSAWaitForMultipleEvents nRet=%ld, %s %d %s\n", nRet, __FILENAME__, __LINE__, __func__);
 
 		// イベントを検知したHANDLE
 		HANDLE mainHandle = eventList[nRet];
-		
+
 		//ハンドル書き込み検出
 		if (mainHandle == eventConnect) {
 			//printf("パイプに接続要求を受けました\n");
-			write_log(2, "パイプに接続要求を受けました, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+			write_log(2, "パイプに接続要求を受けました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 			DWORD byteTransfer;
 			DWORD NumBytesRead;
@@ -202,11 +202,11 @@ int Tcpserver()
 
 			bRet = GetOverlappedResult(mainHandle, &overlappedConnect, &byteTransfer, TRUE);
 			//printf("GetOverlappedResult bRet = %ld\n", bRet);
-			write_log(2, "GetOverlappedResult bRet = %ld, %s %d %s\n", bRet, __FILENAME__ , __LINE__, __func__);
+			write_log(2, "GetOverlappedResult bRet = %ld, %s %d %s\n", bRet, __FILENAME__, __LINE__, __func__);
 
 			if (bRet != TRUE) {
 				//printf("GetOverlappedResult error\n");
-				write_log(5, "GetOverlappedResult error, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+				write_log(5, "GetOverlappedResult error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 				//DisconnectNamedPipe(hPipe);
 				break;
 			}
@@ -221,20 +221,20 @@ int Tcpserver()
 				(LPOVERLAPPED)NULL);
 			if (bRet != TRUE) {
 				//printf("ReadFile error\n");
-				write_log(5, "ReadFile error, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+				write_log(5, "ReadFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 				//DisconnectNamedPipe(hPipe);
 				break;
 			}
 
 			//printf("パイプクライアントと接続しました:[%s]\n", buf);
-			write_log(2, "パイプクライアントと接続しました:[%s], %s %d %s\n", buf, __FILENAME__ , __LINE__, __func__);
+			write_log(2, "パイプクライアントと接続しました:[%s], %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 
 			// 受信メッセージが "stop" の場合はTcpServerを停止
 			if (strcmp(buf, "stop") == 0) {
 				std::lock_guard<std::mutex> lk(server_status_Mutex);
 				server_status = 1;
 				//printf("サーバ停止要求を受信しました\n");
-				write_log(2, "サーバ停止要求を受信しました, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+				write_log(2, "サーバ停止要求を受信しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			}
 
 			// パイプクライアントに応答メッセージを送信
@@ -244,7 +244,7 @@ int Tcpserver()
 				&NumBytesWritten, (LPOVERLAPPED)NULL);
 			if (bRet != TRUE) {
 				//printf("WriteFile error\n");
-				write_log(5, "WriteFile error, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+				write_log(5, "WriteFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 				//DisconnectNamedPipe(hPipe);
 				break;
 			}
@@ -256,19 +256,19 @@ int Tcpserver()
 			bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
 			if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {
 				//printf("ConnectNamedPipe error. (%ld)\n", GetLastError());
-				write_log(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__ , __LINE__, __func__);
+				write_log(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 				break;
 			}
 
 			continue;
 		}
-		
+
 		//イベント調査&イベントハンドルのリセット。これを発行しないとイベントリセットされないので常にイベントが発生している事になる
 		WSANETWORKEVENTS mainEvents;
 		if (WSAEnumNetworkEvents(srcSocket, mainHandle, &mainEvents) == SOCKET_ERROR)
 		{
 			//printf("WSAWaitForMultipleEvents error. (%ld)\n", WSAGetLastError());
-			write_log(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__ , __LINE__, __func__);
+			write_log(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -328,14 +328,14 @@ int Tcpserver()
 		bool result = connectclient_vec.empty();
 
 		if (result == true) {
-			write_log(2, "connectclient_vecがempty。ループを抜けます, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+			write_log(2, "connectclient_vecがempty。ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		count--;
 
 		if (count <= 0) {
-			write_log(2, "タイムアップ。connectclient_vec残%d。強制終了します%s %d %s\n", connectclient_vec.size(), __FILENAME__ , __LINE__, __func__);
+			write_log(2, "タイムアップ。connectclient_vec残%d。強制終了します%s %d %s\n", connectclient_vec.size(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -349,9 +349,10 @@ int Tcpserver()
 	WSACleanup();
 
 	//printf("終了しました\n");
-	write_log(2, "Tcpサーバー停止処理を終了しました, %s %d %s\n", __FILENAME__ , __LINE__, __func__);
+	write_log(2, "Tcpサーバー停止処理を終了しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
-	//SetEvent(******);
+	//サービス側に終了を知らせる
+	SetEvent(TcpServerMainEnd);
 	return(0);
 }
 
@@ -367,16 +368,25 @@ void StopTcpServer()
 int cleanupConnectClientVec(connectclient_vector& vec)
 {
 	int deleteCount = 0;
-	write_log(2, "konishi *** ゴミ掃除開始 ***, %s %d %s", __FILENAME__ , __LINE__, __func__);
+	write_log(2, "konishi *** ゴミ掃除開始 ***, %s %d %s", __FILENAME__, __LINE__, __func__);
 
 	auto it = vec.begin();
 	while (it != vec.end()) {
-		std::lock_guard<std::mutex> lk((*it)->m_mutex);
+		//std::lock_guard<std::mutex> lk((*it)->m_mutex);            // konishi
+		bool liveFlag = true;                                        // konishi
+		{                                                            // konishi
+			// lock_guradeがインスタンスのm_mutexを参照していると
+			// deleteで死んでしまうので、(*it)->_liveの内容を
+			// liveFlagにコピーしておく。
+			std::lock_guard<std::mutex> lk((*it)->m_mutex);          // konishi
+			liveFlag = (*it)->_live;                                 // konishi
+		}                                                            // konishi
 
-		write_log(2, "*** h=%p, flag=%d, %s %d %s", *it, (*it)->_live, __FILENAME__ , __LINE__, __func__);
-		if ((*it)->_live == false) {
-			write_log(2, "konishi *** h=%p deleted, %s %d %s", *it, __FILENAME__ , __LINE__, __func__);
-			delete* it;
+		write_log(2, "*** h=%p, flag=%d, %s %d %s", *it, (*it)->_live, __FILENAME__, __LINE__, __func__);
+		//if ((*it)->_live == false) {                               // konishi
+		if (liveFlag == false) {                                     // konishi
+			//delete* it;                                            // konishi
+			delete* it;                                              // konishi
 			it = vec.erase(it);
 			deleteCount++;
 		}
@@ -385,7 +395,6 @@ int cleanupConnectClientVec(connectclient_vector& vec)
 		}
 	}
 
-	write_log(2, "konishi *** deleteCount = %d ***, %s %d %s", deleteCount, __FILENAME__ , __LINE__, __func__);
+	write_log(2, "konishi *** deleteCount = %d ***, %s %d %s", deleteCount, __FILENAME__, __LINE__, __func__);
 	return deleteCount;
 }
-

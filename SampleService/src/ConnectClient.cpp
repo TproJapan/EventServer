@@ -113,7 +113,7 @@ void ConnectClient::func()
 	//deleteConnection(*pSocketMap, tmpEvent);
 	closesocket(_socket);
 	CloseHandle(tmpEvent);
-	delete this;
+	//delete this;
 
 	//while”²‚¯‚½‚çƒtƒ‰ƒO“|‚·
 	std::lock_guard<std::mutex> lk(m_mutex);

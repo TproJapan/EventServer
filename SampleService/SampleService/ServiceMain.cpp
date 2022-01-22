@@ -408,11 +408,16 @@ VOID StopService()
 	runningService = FALSE;
 
 	//Tcpサーバ停止関数呼び出し
-	StopTcpServer();
 	logObj.log("Tcpサーバ停止を開始しました");
-	//Sleep(40000);
-	//logObj.log("Sleepを開始しました");
-	//WaitForSingleObject(:****:);
+	StopTcpServer();
+
+	logObj.log("TcpServerMainEndの待機を開始しました");
+	// 現在の状態をSCMに通知する
+	BOOL success = SendStatusToSCM(SERVICE_STOP_PENDING,
+		NO_ERROR, 0, 1, 5000);
+
+	WaitForSingleObject(TcpServerMainEnd,INFINITE);
+	logObj.log("TcpServerMainEndの待機を終了しました");
 
 	// ServiceMain関数が制御を返すことができるようにするために
 	// ServiceMain関数が完了するのを防止しているイベントをセットする。
