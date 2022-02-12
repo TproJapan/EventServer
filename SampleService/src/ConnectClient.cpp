@@ -23,7 +23,7 @@ ConnectClient::ConnectClient(SOCKET& tmpsocket)
 ///////////////////////////////////////////////////////////////////////////////
 ConnectClient::~ConnectClient()
 {
-
+	if (_socket != INVALID_SOCKET) closesocket(_socket);
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -111,8 +111,20 @@ void ConnectClient::func()
 	}
 
 	//deleteConnection(*pSocketMap, tmpEvent);
-	closesocket(_socket);
-	CloseHandle(tmpEvent);
+	//closesocket(_socket); // konishi
+	//CloseHandle(tmpEvent);// konishi
+#if 1
+	if (_socket != INVALID_SOCKET) {
+		closesocket(_socket);
+		_socket = INVALID_SOCKET;
+	}
+
+	if (tmpEvent != INVALID_HANDLE_VALUE) {
+		CloseHandle(tmpEvent);
+		tmpEvent = INVALID_HANDLE_VALUE;
+	}
+#endif
+
 	//delete this;
 
 	//while”²‚¯‚½‚çƒtƒ‰ƒO“|‚·
@@ -192,7 +204,18 @@ bool ConnectClient::closeHandler(HANDLE& hEvent)
 void ConnectClient::deleteConnection(HANDLE& hEvent)
 {
 	//socketMap.deleteSocket(hEvent);
-	closesocket(_socket);
-	CloseHandle(hEvent);
+	//closesocket(_socket); // konishi
+	//CloseHandle(hEvent);  // konishi
+
+	if (_socket != INVALID_SOCKET) {
+		closesocket(_socket);
+		_socket = INVALID_SOCKET;
+	}
+
+	if (hEvent != INVALID_HANDLE_VALUE) {
+		CloseHandle(hEvent);
+		hEvent = INVALID_HANDLE_VALUE;
+	}
+
 	return;
 }

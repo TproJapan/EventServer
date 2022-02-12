@@ -407,20 +407,64 @@ VOID StopService()
 
 	runningService = FALSE;
 
+	logObj.log("TcpServerMainEndの待機を開始しました");
+	// 現在の状態をSCMに通知する
+	BOOL success = SendStatusToSCM(SERVICE_STOP_PENDING,
+//		NO_ERROR, 0, 1, 5000);
+		NO_ERROR, 0, 1, 30000);// konishi
+
+	//WaitForSingleObject(TcpServerMainEnd,INFINITE);
+#if 1
+	TcpServerMainEnd = CreateEvent(0, TRUE, FALSE, 0);
+	if (!TcpServerMainEnd)
+	{
+		logObj.log("konishi:CreateEvent error. %d", GetLastError());
+		terminate(GetLastError());
+		return;
+	}
+	logObj.log("konishi:CreateEvent normal ended");
+
 	//Tcpサーバ停止関数呼び出し
 	logObj.log("Tcpサーバ停止を開始しました");
 	StopTcpServer();
 
-	logObj.log("TcpServerMainEndの待機を開始しました");
-	// 現在の状態をSCMに通知する
-	BOOL success = SendStatusToSCM(SERVICE_STOP_PENDING,
-		NO_ERROR, 0, 1, 5000);
+	DWORD dwRet = WaitForSingleObject(TcpServerMainEnd, 20000); // konishi
+	string strRet = "";
+	switch (dwRet) {
+	case WAIT_ABANDONED:
+		strRet = "WAIT_ABANDONED";
+		break;
+	case WAIT_OBJECT_0:
+		strRet = "WAIT_OBJECT_0";
+		break;
+	case WAIT_TIMEOUT:
+		strRet = "WAIT_TIMEOUT";
+		break;
+	case WAIT_FAILED:
+		strRet = "WAIT_FAILED";
+		break;
+	default:
+		strRet = "unknown";
+		break;
+	}
+	logObj.log("konishi: strRet = %s", strRet.c_str());
+	if (dwRet == WAIT_FAILED) {
+		logObj.log("WaitForSingleObject error.code=%d", GetLastError());
+	}
+	//Sleep(20000);
+#endif
 
-	WaitForSingleObject(TcpServerMainEnd,INFINITE);
 	logObj.log("TcpServerMainEndの待機を終了しました");
 
-	// ServiceMain関数が制御を返すことができるようにするために
-	// ServiceMain関数が完了するのを防止しているイベントをセットする。
+#if 1
+	if (TcpServerMainEnd)
+	{
+		CloseHandle(TcpServerMainEnd);
+		logObj.log("konishi:CloseHandle ended.");
+	}
+#endif
+
+	// ServiceMain関数が完了するイベントをセットする。
 	//logObj.log("SetEvent開始");
 	SetEvent(terminateEvent);
 	//logObj.log("SetEvent終了");
