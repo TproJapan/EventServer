@@ -1,10 +1,10 @@
 #pragma warning(disable:4996)
 #include <WinSock2.h>
 #include "ConnectClient.h"
-#include "CommonVariables.h"
-#include "CommonFunc.h"
+//#include "CommonVariables.h"
+#include "TcpCommon.h"
 #include <boost/asio.hpp>
-#include "CommonVariables.h"
+//#include "CommonVariables.h"
 #include "BoostLog.h"
 
 

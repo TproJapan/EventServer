@@ -6,9 +6,8 @@
 #include <boost/asio.hpp>
 #include "thread_pool.h"
 #include "ConnectClient.h"
-#include "CommonFunc.h"
 #define __MAIN_SRC__
-#include "CommonVariables.h"
+#include "TcpCommon.h"
 #include "BoostLog.h"
 #include <tchar.h>
 #include "TcpServer.h"
@@ -19,8 +18,8 @@
 
 int Tcpserver()
 {
-	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
-	logging::add_common_attributes();
+//	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
+//	logging::add_common_attributes();
 	int nRet = 0;
 
 	///////////////////////////////////

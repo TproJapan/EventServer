@@ -142,22 +142,17 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="..\src\BoostLog.cpp" />
-    <ClCompile Include="..\src\CommonFunc.cpp" />
+    <ClCompile Include="..\src\TcpCommon.cpp" />
     <ClCompile Include="..\src\ConnectClient.cpp" />
-    <ClCompile Include="..\src\CSocketMap.cpp" />
     <ClCompile Include="..\src\TcpServer.cpp" />
-    <ClCompile Include="CLog.cpp" />
     <ClCompile Include="ServiceMain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\src\BoostLog.h" />
-    <ClInclude Include="..\src\CommonFunc.h" />
-    <ClInclude Include="..\src\CommonVariables.h" />
+    <ClInclude Include="..\src\TcpCommon.h" />
     <ClInclude Include="..\src\ConnectClient.h" />
-    <ClInclude Include="..\src\CSocketMap.h" />
     <ClInclude Include="..\src\TcpServer.h" />
     <ClInclude Include="..\src\thread_pool.h" />
-    <ClInclude Include="CLog.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
