@@ -8,11 +8,11 @@ CCFLAG = -std=c++11 -g -DBOOST_LOG_DYN_LINK
 all : $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4)
 
 #$(TARGET1) : TcpServer.o BoostLog.o thread_pool.o
-$(TARGET1) : TcpServer.o BoostLog.o TcpCommon.o
+$(TARGET1) : TcpServer.o BoostLog.o TcpCommon.o ConnectClient.o
 #	g++ -o $(TARGET1) TcpServer.o BoostLog.o -lpthread
 #	g++ -DBOOST_LOG_DYN_LINK -o $(TARGET1) TcpServer.o BoostLog.o -lpthread -lboost_log -lboost_thread -lboost_system
 # -DBOOST_LOG_DYN_LINK　をここに書いても意味がないのでCCFLAGに引っ越し
-	g++ -o $(TARGET1) TcpServer.o BoostLog.o TcpCommon.o -lpthread -lboost_log -lboost_thread -lboost_system
+	g++ -o $(TARGET1) TcpServer.o BoostLog.o TcpCommon.o ConnectClient.o -lpthread -lboost_log -lboost_thread -lboost_system
 	
 $(TARGET2) : TcpClient.o 
 	g++ -o $(TARGET2) TcpClient.o -lrt
@@ -45,6 +45,8 @@ Start.o : Start.cpp TcpCommon.h
 TcpCommon.o : TcpCommon.cpp TcpCommon.h BoostLog.h
 	g++ -c $(CCFLAG) TcpCommon.cpp
 
+ConnectClient.o : ConnectClient.cpp ConnectClient.h
+	g++ -c $(CCFLAG) ConnectClient.cpp
 clean :
 	rm -f $(TARGET1) $(TARGET2) $(TARGET3) $(TARGET4) *.o
 
