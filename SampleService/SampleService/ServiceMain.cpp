@@ -2,7 +2,6 @@
 // サービスプログラムのサンプル
 ///////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
-//#include "CLog.h"
 #include "../src/BoostLog.h"
 #include "../src/TcpServer.h"
 #include <Windows.h>
@@ -61,19 +60,14 @@ int main(int argc, char* argv[])
 
 	bool bRet;
 	
-	// ログファイルを作成
-//	bRet = logObj.open(LOGFILE_NAME);
-//	logObj.log("main started");
 	write_log(2, "main started, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	// サービスメイン関数をSCMに登録する
 	bRet = registServiceMain();
 	if (!bRet) {
-//		logObj.log("registServiceMain error.");
 		write_log(4, "registServiceMain error. (%ld),%s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 		return -1;
 	}
 
-//	logObj.log("main ended");
 	write_log(2, "main ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	return 0;
 }
@@ -89,19 +83,16 @@ bool registServiceMain()
 		{NULL,NULL}
 	};
 
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	// SCMに登録する
 	BOOL success = StartServiceCtrlDispatcher(serviceTable);
 	if (!success)
 	{
-//		logObj.log("StartServiceCtrlDispatcher error. (%d)", GetLastError());
 		write_log(4, "StartServiceCtrlDispatcher error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		return false;
 	}
 
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 	return true;
 }
@@ -112,7 +103,6 @@ bool registServiceMain()
 VOID ServiceMain(DWORD argc, LPSTR* argv)
 {
 	BOOL success;
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	// 即座に登録関数を呼び出す
@@ -120,21 +110,18 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 													(LPHANDLER_FUNCTION)ServiceCtrlHandler);
 	if (!serviceStatusHandle)
 	{
-//		logObj.log("RegisterServiceCtrlHandler error.", GetLastError());
 		write_log(4, "RegisterServiceCtrlHandler error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
 	}
 
-//	logObj.log("RegisterServiceCtrlHandler normal ended.");
 	write_log(2, "RegisterServiceCtrlHandler normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	// 進行状況をSCMに通知する
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 1, 5000);
 	if (!success)
 	{
-//		logObj.log("SendStatusToSCM error.");
 		write_log(2, "SendStatusToSCM error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		terminate(GetLastError());
 		return;
@@ -144,46 +131,28 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	terminateEvent = CreateEvent(0, TRUE, FALSE, 0);
 	if (!terminateEvent)
 	{
-//		logObj.log("CreateEvent error. %d", GetLastError());
 		write_log(4, "CreateEvent error. %d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
 	}
-//	logObj.log("CreateEvent normal ended");
+
 	write_log(2, "CreateEvent normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	// 進行状況をSCMに通知する
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 2, 1000);
 	if (!success)
 	{
-//		logObj.log("SendStatusToSCM(2) error. %d", GetLastError());
 		write_log(4, "SendStatusToSCM(2) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
 	}
 
-	// 開始パラメータの有無をチェックする
-	/*
-	if (argc == 2)
-	{
-		int temp = atoi(argv[1]);
-		if (temp < 1000)
-		{
-			beepDelay = 2000;
-		}
-		else
-		{
-			beepDelay = temp;
-		}
-	}*/
-
 	// 進行状況をSCMに通知する
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 3, 5000);
 	if (!success)
 	{
-//		logObj.log("SendStatusToSCM(3) error. %d", GetLastError());
 		write_log(4, "SendStatusToSCM(3) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
@@ -194,7 +163,6 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	success = InitService();
 	if (!success)
 	{
-//		logObj.log("InitService error");
 		write_log(4, "InitService error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		terminate(GetLastError());
 		return;
@@ -205,23 +173,17 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	success = SendStatusToSCM(SERVICE_RUNNING, NO_ERROR, 0, 0, 0);
 	if (!success)
 	{
-//		logObj.log("SendStatusToSCM(4) error. %d", GetLastError());
 		write_log(4, "SendStatusToSCM(4) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
 	}
 
-	// 終了シグナルを待機し、それを検出したら終了する。
-//	logObj.log("Before WaitForSingleObject");
-
 	WaitForSingleObject(terminateEvent, INFINITE);
-//	logObj.log("After WaitForSingleObject");
 	write_log(2, "After WaitForSingleObject. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	terminate(0);
 
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	return;
@@ -234,38 +196,30 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 ///////////////////////////////////////////////////////////////////////////////
 VOID terminate(DWORD error)
 {
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	// terminateEventハンドルが作成されている場合は閉じる
 	if (terminateEvent) {
-//		logObj.log("terminateEventをクローズ.");
 		write_log(2, "terminateEventをクローズ. %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
 		CloseHandle(terminateEvent);
 	}
 
 	// サービスが停止したことを通知するためにSCMにメッセージを送信する
 	if (serviceStatusHandle)
 	{
-//		logObj.log("SCMにサービスの停止を通知.");
 		write_log(2, "SCMにサービスの停止を通知. %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
 		SendStatusToSCM(SERVICE_STOPPED, error, 0, 0, 0);
 	}
 
 	// スレッドが開始されている場合は、それを終了する
 	if (threadHandle)
 	{
-//		logObj.log("threadHandleをクローズ.");
 		write_log(2, "threadHandleをクローズ. %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
 		CloseHandle(threadHandle);
 	}
 
 	// serviceStatusHandleは閉じる必要がない。
 
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	return;
@@ -284,7 +238,6 @@ BOOL SendStatusToSCM(DWORD dwCurrentState,
 	BOOL success;
 	SERVICE_STATUS status;
 
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	// SERVICE_STATUS構造体のすべてのメンバに値を設定する。
@@ -323,13 +276,11 @@ BOOL SendStatusToSCM(DWORD dwCurrentState,
 	success = SetServiceStatus(serviceStatusHandle, &status);
 	if (!success)
 	{
-//		logObj.log("SetServiceStatus error. %d", GetLastError());
 		write_log(4, "SetServiceStatus error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 
 		StopService();
 	}
 
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	return success;
@@ -344,7 +295,6 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 	DWORD currentState = 0;
 	BOOL success;
 
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	switch (controlCode)
@@ -354,7 +304,6 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 
 		// サービスを停止する
 	case SERVICE_CONTROL_STOP:
-//		logObj.log("SERVICE_CONTROL_STOP");
 		write_log(2, "SERVICE_CONTROL_STOP. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 		currentState = SERVICE_STOP_PENDING;
@@ -369,7 +318,6 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 
 		// サービスを一時停止する
 	case SERVICE_CONTROL_PAUSE:
-//		logObj.log("SERVICE_CONTROL_PAUSE");
 		write_log(2, "SERVICE_CONTROL_PAUSE. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 		if (runningService && !pauseServise)
@@ -384,7 +332,6 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 
 		// 一時停止から再開する
 	case SERVICE_CONTROL_CONTINUE:
-//		logObj.log("SERVICE_CONTROL_CONTINUE");
 		write_log(2, "SERVICE_CONTROL_CONTINUE. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 		if (runningService && pauseServise)
@@ -400,30 +347,22 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 		// 現在の状態を更新する
 	case SERVICE_CONTROL_INTERROGATE:
 		// このswitch分の後に行に進み、状態を送信する
-//		logObj.log("SERVICE_CONTROL_INTERROGATE");
 		write_log(2, "SERVICE_CONTROL_INTERROGATE. %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
 		break;
 
 		// シャットダウン時には何もしない。ここでクリーンアップを
 		// 行うことができるが、非常にすばやく行わなければならない。
 	case SERVICE_CONTROL_SHUTDOWN:
 		// シャットダウン時には何もしない。
-//		logObj.log("SERVICE_CONTROL_SHUTDOWN");
 		write_log(2, "SERVICE_CONTROL_SHUTDOWN. %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
 		return;
 
 	default:
-//		logObj.log("default");
 		write_log(2, "default. %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
 		break;
 	}
 
 	success = SendStatusToSCM(currentState, NO_ERROR, 0, 0, 0);
-
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 }
 
@@ -433,8 +372,6 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 BOOL InitService()
 {
 	DWORD id;
-
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	// サービスのスレッドを開始する
@@ -443,20 +380,13 @@ BOOL InitService()
 								0, 0, &id);
 	if (threadHandle == 0)
 	{
-//		logObj.log("CreateThread error. %d", GetLastError());
 		write_log(4, "CreateThread error. %d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 		return FALSE;
 	}
 
-
-//	logObj.log("CreateThread normal ended", 0);
 	write_log(2, "CreateThread normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
 	runningService = TRUE;
-
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
-
 	return TRUE;
 }
 
@@ -465,17 +395,12 @@ BOOL InitService()
 ///////////////////////////////////////////////////////////////////////////////
 VOID StopService()
 {
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
-
 	runningService = FALSE;
-
-//	logObj.log("TcpServerMainEndの待機を開始しました");
 	write_log(2, "TcpServerMainEndの待機を開始しました. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	// 現在の状態をSCMに通知する
 	BOOL success = SendStatusToSCM(SERVICE_STOP_PENDING,
-//		NO_ERROR, 0, 1, 5000);
 		NO_ERROR, 0, 1, 30000);// konishi
 
 	//WaitForSingleObject(TcpServerMainEnd,INFINITE);
@@ -483,17 +408,15 @@ VOID StopService()
 	TcpServerMainEnd = CreateEvent(0, TRUE, FALSE, 0);
 	if (!TcpServerMainEnd)
 	{
-//		logObj.log("konishi:CreateEvent error. %d", GetLastError());
 		write_log(4, "konishi:CreateEvent error.  %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
 	}
-//	logObj.log("konishi:CreateEvent normal ended");
+
 	write_log(2, "konishi:CreateEvent normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	//Tcpサーバ停止関数呼び出し
-//	logObj.log("Tcpサーバ停止を開始しました");
 	write_log(2, "Tcpサーバ停止を開始しました. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	StopTcpServer();
@@ -517,35 +440,27 @@ VOID StopService()
 		strRet = "unknown";
 		break;
 	}
-//	logObj.log("konishi: strRet = %s", strRet.c_str());
+
 	write_log(2, "konishi: strRet = %s. %s %d %s\n", strRet.c_str(), __FILENAME__, __LINE__, __func__);
 
 	if (dwRet == WAIT_FAILED) {
-//		logObj.log("WaitForSingleObject error.code=%d", GetLastError());
 		write_log(4, "WaitForSingleObject error.code=%d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 
 	}
-	//Sleep(20000);
 #endif
 
-//	logObj.log("TcpServerMainEndの待機を終了しました");
 	write_log(2, "TcpServerMainEndの待機を終了しました. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 #if 1
 	if (TcpServerMainEnd)
 	{
 		CloseHandle(TcpServerMainEnd);
-//		logObj.log("konishi:CloseHandle ended.");
 		write_log(2, "konishi:CloseHandle ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	}
 #endif
 
 	// ServiceMain関数が完了するイベントをセットする。
-	//logObj.log("SetEvent開始");
 	SetEvent(terminateEvent);
-	//logObj.log("SetEvent終了");
-
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	return;
@@ -556,12 +471,9 @@ VOID StopService()
 ///////////////////////////////////////////////////////////////////////////////
 VOID ResumeService()
 {
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
-
 	pauseServise = FALSE;
 	ResumeThread(threadHandle);
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 }
 
@@ -570,12 +482,9 @@ VOID ResumeService()
 ///////////////////////////////////////////////////////////////////////////////
 VOID PauseService()
 {
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
-
 	pauseServise = TRUE;
 	SuspendThread(threadHandle);
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 }
 
@@ -584,23 +493,14 @@ VOID PauseService()
 ///////////////////////////////////////////////////////////////////////////////
 DWORD ServiceThread(LPDWORD param)
 {
-//	logObj.log("%s started.", __FUNCTION__);
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
-
-//	while (1)
-//	{
-//		logObj.log("サービス、サービス!!!");
-//		Sleep(2000);
-//	}
 	
 	int result = Tcpserver();
 	if(result != 0)
 	{
-//		logObj.log("%s ended with error %d!", "Tcpserver()", result);
 		write_log(4, "Tcpserver() ended with error %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
 	}
 	
-//	logObj.log("%s ended.", __FUNCTION__);
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 	return 0;
 }

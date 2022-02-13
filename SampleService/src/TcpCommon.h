@@ -1,10 +1,6 @@
 #pragma once
 #include "thread_pool.h"
-//#include "ConnectClient.h"
-//#include "CSocketMap.h"
 #include <vector>
-
-class ConnectClient;
 
 ///////////////////////////////////////////////////////////////////////////////
 // 共用変数
@@ -16,9 +12,6 @@ HANDLE socketMap_Mutex;
 const char* PIPE_NAME = "\\\\%s\\pipe\\EventServer";
 #define CLIENT_MAX	400					// 同時接続可能クライアント数
 #define TIMEOUT_MSEC	3000			// タイムアウト時間(ミリ秒)
-//CSocketMap* pSocketMap;
-//typedef std::vector<ConnectClient*> connectclient_vector;
-//connectclient_vector connectclient_vec;//new ConnectClient(CommonFunc.cpp内)解放漏れ防止の管理Vector
 #define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #else
 extern int server_status;//サーバーステータス(0:起動, 1:シャットダウン)
@@ -27,12 +20,8 @@ extern HANDLE socketMap_Mutex;
 extern const char* PIPE_NAME;
 #define CLIENT_MAX	400					// 同時接続可能クライアント数
 #define TIMEOUT_MSEC	3000			// タイムアウト時間(ミリ秒)
-//extern CSocketMap* pSocketMap;
-//typedef std::vector<ConnectClient*> connectclient_vector;
-//extern connectclient_vector connectclient_vec;//new ConnectClient(CommonFunc.cpp内)解放漏れ防止の管理Vector
 #define __FILENAME__ (strrchr(__FILE__, '\\') ? strrchr(__FILE__, '\\') + 1 : __FILE__)
 #endif
 
 //プロトタイプ宣言
 extern int checkServerStatus();
-//extern bool acceptHandler(SOCKET& sock, thread_pool& tp);

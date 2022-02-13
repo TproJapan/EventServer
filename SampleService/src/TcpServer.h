@@ -1,8 +1,9 @@
 #pragma once
 #pragma comment(lib, "ws2_32.lib")
 #pragma warning(disable:4996)
-//#include "ConnectClient.h"
 #include "TcpCommon.h"
+#include "ConnectClient.h"
+
 typedef std::vector<ConnectClient*> connectclient_vector;
 int Tcpserver();
 void StopTcpServer();//サーバーステータス(0:起動, 1:シャットダウン)		
