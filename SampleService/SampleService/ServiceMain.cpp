@@ -2,10 +2,10 @@
 // サービスプログラムのサンプル
 ///////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
-#include <Windows.h>
 //#include "CLog.h"
 #include "../src/BoostLog.h"
 #include "../src/TcpServer.h"
+#include <Windows.h>
 
 using namespace std;
 
