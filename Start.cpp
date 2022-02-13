@@ -16,7 +16,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include "TcpCommon.h"
-#include "semlock.h"
+// #include "semlock.h"
 using namespace std;
 
 int fd_start = -1;//立ち上がり完了報告用fd;
@@ -30,44 +30,44 @@ int closeStartPipe();
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
-	//排他制御
-	int nRetS = 0;
+	// //排他制御
+	// int nRetS = 0;
 
-	printf("Start is Waiting for resolving the Lock...\n");
+	// printf("Start is Waiting for resolving the Lock...\n");
 
-	nRetS = sem_lock(LOCK_ID_TYPE01,
-		IPC_CREAT);
-	if (nRetS != 0) {
-		printf("sem_lock error in Start.cpp. nRet=%d\n", nRetS);
-		return -1;
-	}
-	printf("Locked by Start Process...\n");
+	// nRetS = sem_lock(LOCK_ID_TYPE01,
+	// 	IPC_CREAT);
+	// if (nRetS != 0) {
+	// 	printf("sem_lock error in Start.cpp. nRet=%d\n", nRetS);
+	// 	return -1;
+	// }
+	// printf("Locked by Start Process...\n");
 	
-	//pidファイルチェック
-	nRet = exist_process(PID_SERVER);
-	if(nRet == -1){
-		printf("No pid file\n");
-		printf("Start Command executed\n");
-	}else if(nRet == 0){
-		printf("pid file exist but process is no exist\n");
-		printf("Start Command executed\n");
-	}else{
-		printf("process is already exist\n");
+	// //pidファイルチェック
+	// nRet = exist_process(PID_SERVER);
+	// if(nRet == -1){
+	// 	printf("No pid file\n");
+	// 	printf("Start Command executed\n");
+	// }else if(nRet == 0){
+	// 	printf("pid file exist but process is no exist\n");
+	// 	printf("Start Command executed\n");
+	// }else{
+	// 	printf("process is already exist\n");
 
-		//ToDo:ps aux | grep TcpServerを実行してTcpServerという文字があるか確認
-		//system("ps aux | grep TcpServer | grep -v grep | grep -v Log > /tmp/hoge.txt");
-		//hoge.txtをfile openして文字列処理を行う
+	// 	//ToDo:ps aux | grep TcpServerを実行してTcpServerという文字があるか確認
+	// 	//system("ps aux | grep TcpServer | grep -v grep | grep -v Log > /tmp/hoge.txt");
+	// 	//hoge.txtをfile openして文字列処理を行う
 
-		printf("Start Command stopped\n");
-		semUnLock(LOCK_ID_TYPE01);
-		return -1;
-	}
+	// 	printf("Start Command stopped\n");
+	// 	semUnLock(LOCK_ID_TYPE01);
+	// 	return -1;
+	// }
 
 	//引数チェック
 	if ( argc == 1 || argc > 3 ) {
 		perror("Start Option error\n");
 		printf("E.G: # ./Start 5000 or # ./Start -f 5000\n");
-		semUnLock(LOCK_ID_TYPE01);
+		// semUnLock(LOCK_ID_TYPE01);
 		return -1;
 	} 
 
@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 	nRet = mkfifo(PIPE_START, 0666);
 	if ( nRet ==-1 ) {
 		perror("mkfifo\n");
-		semUnLock(LOCK_ID_TYPE01);
+		// semUnLock(LOCK_ID_TYPE01);
 		return -1;
 	}
 
@@ -107,7 +107,7 @@ int main(int argc, char* argv[])
     if (pid == -1 ) 
 	{
         printf("fork has failed in Start.cpp\n");
-		semUnLock(LOCK_ID_TYPE01);
+		// semUnLock(LOCK_ID_TYPE01);
 		return -1;
     }
 	else if (pid == 0) //子プロセスには0が返る
@@ -118,7 +118,7 @@ int main(int argc, char* argv[])
         if ( nRet == -1 ) 
 		{
 			printf("execv has failed in Start.cpp. errno=%d\n", errno); //konishi
-			semUnLock(LOCK_ID_TYPE01);
+			// semUnLock(LOCK_ID_TYPE01);
 			return -1;
         }
     }
@@ -128,7 +128,7 @@ int main(int argc, char* argv[])
     if ((fd_start = open(PIPE_START, O_RDONLY)) == -1)
     {
 		closeStartPipe();
-		semUnLock(LOCK_ID_TYPE01);
+		// semUnLock(LOCK_ID_TYPE01);
         return 1;
     }
 
@@ -143,14 +143,14 @@ int main(int argc, char* argv[])
         }else if(nbyte == -1){
 			perror("write()\n");
 			closeStartPipe();
-			semUnLock(LOCK_ID_TYPE01);
+			// semUnLock(LOCK_ID_TYPE01);
 			return -1;
 		}
     }
 
 	closeStartPipe();
 
-	semUnLock(LOCK_ID_TYPE01);
+	// semUnLock(LOCK_ID_TYPE01);
 
 	return 0;
 }
