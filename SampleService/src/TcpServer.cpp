@@ -17,20 +17,29 @@
 ///////////////////////////////////////////////////////////////////////////////
 connectclient_vector connectclient_vec;
 
-int Tcpserver()
-{
-	int nRet = 0;
-
-	//スレッドプール作成
-	boost::asio::io_service io_service;
-	thread_pool tp(io_service, CLIENT_MAX);
+TcpServer::TcpServer() {
+	nRet = 0;
 
 	// パイプ名の組み立て
-	char pipeName[80];
 	wsprintf((LPWSTR)pipeName, (LPCWSTR)PIPE_NAME, ".");
+}
+
+TcpServer::~TcpServer() {
+
+}
+
+int TcpServer::Func() {
+
+	//スレッドプール作成
+	//boost::asio::io_service io_service;
+	thread_pool tp(io_service, CLIENT_MAX);
+	tp_ptr = &tp;
+	// パイプ名の組み立て
+	//char pipeName[80];
+	//wsprintf((LPWSTR)pipeName, (LPCWSTR)PIPE_NAME, ".");
 
 	// 名前付きパイプの作成
-	HANDLE hPipe;
+	//HANDLE hPipe;
 	hPipe = CreateNamedPipe((LPCWSTR)_T("\\\\.\\pipe\\EventServer"),		// パイプ名
 		PIPE_ACCESS_DUPLEX | FILE_FLAG_OVERLAPPED,		// パイプのアクセスモード
 		PIPE_TYPE_MESSAGE,		// パイプの種類, 待機モード
@@ -237,7 +246,7 @@ int Tcpserver()
 		if (mainEvents.lNetworkEvents & FD_ACCEPT)
 		{
 			// クライアントから新規接続を検知
-			acceptHandler(srcSocket, tp);
+			acceptHandler(srcSocket, *tp_ptr);
 		}
 	}
 
@@ -290,7 +299,7 @@ int Tcpserver()
 	return(0);
 }
 
-void StopTcpServer()
+void TcpServer::StopTcpServer()
 {
 	std::lock_guard<std::mutex> lk(server_status_Mutex);
 	server_status = 1;
@@ -299,7 +308,7 @@ void StopTcpServer()
 ///////////////////////////////////////////////////////////////////////////////
 // ソケット切断済みのconnect_clientの解放処理
 ///////////////////////////////////////////////////////////////////////////////
-int cleanupConnectClientVec(connectclient_vector& vec)
+int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 {
 	int deleteCount = 0;
 	write_log(2, "konishi *** ゴミ掃除開始 ***, %s %d %s", __FILENAME__, __LINE__, __func__);
@@ -333,7 +342,7 @@ int cleanupConnectClientVec(connectclient_vector& vec)
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントから新規接続受付時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////
-bool acceptHandler(SOCKET& sock, thread_pool& tp)
+bool TcpServer::acceptHandler(SOCKET& sock, thread_pool& tp)
 {
 	write_log(2, "クライアント接続要求を受け付けました %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
