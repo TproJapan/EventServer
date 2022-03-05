@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
     sprintf(pid_buff, "%d", r_pid);//文字列に変換
 
 	char TcpServer_path[256];
-	sprintf(TcpServer_path, "%s%s",PROJ_HOME, "/TcpServer");
+	sprintf(TcpServer_path, "%s%s",PROJ_HOME, "/ServerMain");
 	char* const str[] = {(char*)"myServer", port_buff, pid_buff, NULL};
 	pid_t pid = 0;
 	

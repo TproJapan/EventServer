@@ -25,155 +25,32 @@
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
 #include "thread_pool.h"
-#define MAXFD 64
-///////////////////////////////////////////////////////////////////////////////
-// 共用変数
-///////////////////////////////////////////////////////////////////////////////
+#include "TcpServer.h"
+
 bool main_thread_flag = true;
-int fd_start;//Startへの立ち上がり完了報告用名前付きパイプ;
-int fddevnull = 0;//dev/null用fd
-
-///////////////////////////////////////////////////////////////////////////////
-// 関数
-///////////////////////////////////////////////////////////////////////////////
-void sigalrm_handler(int signo, thread_pool _tp);
-void sigusr2_handler(int signo);
-
-///////////////////////////////////////////////////////////////////////////////
-// main
-///////////////////////////////////////////////////////////////////////////////
 //memory解放処理するためにConnectClient*のList変数で管理
-typedef std::vector<ConnectClient*> connectclient_vector;
 connectclient_vector connectclient_vec;
-int cleanupConnectClientVec(connectclient_vector& vec); // konishi
 
-
-int main(int argc, char* argv[])
+void sigalrm_handler(int signo, thread_pool _tp)
 {
-	//BoostLog有効化
-	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
-	logging::add_common_attributes();
-	write_log(4, "konishi : main started \n");// konishi
-	
-	char work[256];
-    pid_t s_pid;
-	int nPortNo;
+	write_log(2, "sig_handler started. signo=%d\n", signo);
+	//ワーカースレッド強制終了します
+	_tp.terminateAllThreads();
+	write_log(2, "ワーカースレッド強制終了しました\n");
+	return;
+}
 
-    //Startからポート番号を受け取る
-    nPortNo = atoi(argv[1]);
+void sigusr2_handler(int signo){
+	write_log(2, "sig_handler started. signo=%d\n", signo);
+	main_thread_flag = false;
+	write_log(2, "main_thread_flagを書き換えました\n");
+	return;
+}
 
-    //Startからプロセスidを受け取る
-	char* tmp = argv[2];
+TcpServer::TcpServer(int portNo):tp(io_service, CLIENT_MAX) {
+    nPortNo = portNo;
 
-	//------------------------------------------------------
-    // 状態.
-    // 子プロセスのみとなったがTTYは保持したまま.
-    //------------------------------------------------------
-
-
-    //------------------------------------------------------
-    // TTYを切り離してセッションリーダー化、プロセスグループリーダー化する.
-    //------------------------------------------------------
-    setsid();
-
-
-    //------------------------------------------------------
-    // HUPシグナルを無視.
-    // 親が死んだ時にHUPシグナルが子にも送られる可能性があるため.
-    //------------------------------------------------------
-    signal(SIGHUP, SIG_IGN);
- 	signal(SIGCHLD, SIG_IGN);
-
-
-    //------------------------------------------------------
-    // 状態.
-    // このままだとセッションリーダーなのでTTYをオープンするとそのTTYが関連づけられてしまう.
-    //------------------------------------------------------
-
-
-    //------------------------------------------------------
-    // 親プロセス(セッショングループリーダー)を切り離す.
-    // 親を持たず、TTYも持たず、セッションリーダーでもない状態になる.
-    //------------------------------------------------------
-	pid_t pid = 0;
-	pid = fork();
-    if (pid == -1 ) 
-	{
-		write_log(4, "Fork has failed in EventServer.cpp\n");
-		return -1;
-    }
-
-    if(pid != 0){
-        // 子供世代プロセスを終了し、孫世代になる.
-        _exit(0);
-    }
-
-    //------------------------------------------------------
-    // デーモンとして動くための準備を行う.
-    //------------------------------------------------------
-	//Logファイルパス取得
-	char dir[255];
-	getcwd(dir,255);
-
-
-    // カレントディレクトリ変更.
-    // ルートディレクトリに移動.(デーモンプロセスはルートディレクトリを起点にして作業するから)
-    chdir("/");
-	write_log(4, "konishi : after cddir \n");// konishi
-	
-    // 親から引き継いだ全てのファイルディスクリプタのクローズ.
-    for(int i = 0; i < MAXFD; i++){
-        close(i);
-    }
-
-	write_log(4, "konishi : before open /dev/null \n");// konishi
-    // stdin,stdout,stderrをdev/nullでオープン.
-    // 単にディスクリプタを閉じるだけだとこれらの出力がエラーになるのでdev/nullにリダイレクトする.
-    if((fddevnull = open("/dev/null", O_RDWR, 0) != -1)){
-
-        // ファイルディスクリプタの複製.
-        // このプロセスの0,1,2をfdが指すdev/nullを指すようにする.
-        dup2(fddevnull, 0);
-        dup2(fddevnull, 1);
-        dup2(fddevnull, 2);
-        if(fddevnull < 2){
-            close(fddevnull);
-        }
-    }
-
-    //------------------------------------------------------
-    // デーモン化後の処理
-    //------------------------------------------------------
-	//初期化
-	write_log(4, "konishi : before SetServerStatus \n");// konishi
-	SetServerStatus(0);
-	write_log(4, "konishi : after SetServerStatus \n");// konishi
-	
-	//Startプロセス通信用の名前つきパイプを書込専用で開き
-    if ((fd_start = open(PIPE_START, O_WRONLY)) == -1)
-    {
-		write_log(4, "open PIPE_START failed\n");
-        return -1;
-    }
-
-	//Startへプロセスid送信
-	char buff[16];
-	sprintf(buff, "pid = %d", getpid());// konishi
-	if (write(fd_start, buff, strlen(buff)) != strlen(buff))
-	{
-		write_log(4, "write PIPE_START failed\n");
-		close(fd_start);
-		return -1;
-	}
-	write_log(4, "konishi : after pipe wirite \n");// konishi
-	
-	//スレッドプール作成
-	boost::asio::io_service io_service;
-	thread_pool tp(io_service, CLIENT_MAX);
-	
-	write_log(4, "konishi : after thread_;pool \n");// konishi
-	
-	///////////////////////////////////
+    ///////////////////////////////////
     // シグナルハンドラの設定
     ///////////////////////////////////
     struct sigaction act;
@@ -190,12 +67,12 @@ int main(int argc, char* argv[])
     //シグナルマスクの初期化
 	write_log(4, "konishi : before sigemptyset \n");// konishi
 	nRet = sigemptyset(&sigset);
-    if( nRet != 0 ) return -1;
+    if( nRet != 0 ) throw -1;
 
     //Control-C(SIGINT)で割り込まれないようにする
 	write_log(4, "konishi : before sigaddset \n");// konishi
     nRet = sigaddset(&sigset, SIGINT);
-    if( nRet != 0 ) return -1;
+    if( nRet != 0 ) throw -1;
     act.sa_mask = sigset;
 
 	write_log(4, "konishi : Before sigaction \n");// konishi
@@ -206,8 +83,10 @@ int main(int argc, char* argv[])
     //第2引数は第1引数で指定したシステムコールで呼び出したいアクション
     //第3引数は第1引数で指定したシステムコールでこれまで呼び出されていたアクションが格納される。NULLだとこれまでの動作が破棄される
     nRet = sigaction(SIGALRM,&act,NULL);
-    if ( nRet == -1 ) err(EXIT_FAILURE, "sigaction(sigalrm) error");
-
+    if ( nRet == -1 ) {
+        write_log(4, "sigaction(sigalrm) error");
+        throw -1;
+    }
 
 	///////////////////////////////////
     // SIGUSR2捕捉
@@ -215,27 +94,25 @@ int main(int argc, char* argv[])
 	memset(&act, 0, sizeof(act));//再度初期化
 	act.sa_handler = sigusr2_handler;
 	nRet = sigaction(SIGUSR2,&act,NULL);
-	if ( nRet == -1 ) err(EXIT_FAILURE, "sigaction(siguer2) error");
+	if ( nRet == -1 ) {
+        write_log(4, "sigaction(sigalrm2) error");
+        throw -1;
+    }
 
-	write_log(4, "konishi : After sigaction \n");// konishi
-	
 	///////////////////////////////////
     // socketの設定
     ///////////////////////////////////
     // listen用sockaddrの設定
-	struct sockaddr_in srcAddr;
 	memset(&srcAddr, 0, sizeof(srcAddr));
 	srcAddr.sin_port = htons(nPortNo);
 	srcAddr.sin_family = AF_INET;
 	srcAddr.sin_addr.s_addr = INADDR_ANY;
 
 	// ソケットの生成(listen用)
-	int srcSocket;
 	srcSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if ( srcSocket == -1 ) {
-		//printf("socket error\n");
 		write_log(4, "socket error\n");
-		return -1;
+		throw -1;
 	}
 
 	// ソケットのバインド
@@ -245,7 +122,7 @@ int main(int argc, char* argv[])
 	nRet = setsockopt(srcSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 	if ( nRet == -1 ) {
 		write_log(4, "setsockopt error\n");
-		return -1;
+		throw -1;
 	}
 
 	nRet = bind(srcSocket,
@@ -253,15 +130,53 @@ int main(int argc, char* argv[])
 				sizeof(srcAddr));
 	if ( nRet == -1 ) {
 		write_log(4, "bind error\n");
-		return -1;
+		throw -1;
 	}
 
 	// クライアントからの接続待ち
 	nRet = listen(srcSocket, 1);
 	if ( nRet == -1 ) {
 		write_log(4, "listen error\n");
-		return -1;
+		throw -1;
 	}
+}
+
+TcpServer::~TcpServer() {
+    int nRet = 0;
+    
+    // 接続待ちソケットのクローズ
+	nRet = close(srcSocket);
+	if ( nRet == -1 ) {
+		write_log(4, "close error\n");
+	}
+	
+	SetServerStatus(1);
+
+	//sigalerm発行
+	alarm(60);
+	write_log(2, "alarmがセットされました\n");
+
+	int past_seconds = 0;
+
+	while(1){
+		sleep(2);
+		past_seconds += 2;
+		write_log(2, "%d秒経過しました\n", past_seconds);
+
+		// Vectorのゴミ掃除
+		cleanupConnectClientVec(connectclient_vec);
+		bool result = connectclient_vec.empty();
+		if(result == true){
+			write_log(2, "ループを抜けます\n");
+			break;
+		}
+	}
+
+	write_log(2, "正常終了します\n");
+}
+
+int TcpServer::Func() {	
+    int nRet = 0;
 	
 	while(main_thread_flag) {
 	 	int dstSocket = -1;		// クライアントとの通信ソケット
@@ -347,61 +262,13 @@ int main(int argc, char* argv[])
 
 			write_log(2, "*** h=%p, dstSocket=%d\n",h, dstSocket);
 			tp.post(boost::bind(&ConnectClient::func, h));
-  		}		
-	}
+  		}
+    }
 
-	// 接続待ちソケットのクローズ
-	nRet = close(srcSocket);
-	if ( nRet == -1 ) {
-		write_log(4, "close error\n");
-	}
-	
-	SetServerStatus(1);
-
-	//sigalerm発行
-	alarm(60);
-	write_log(2, "alarmがセットされました\n");
-
-	int past_seconds = 0;
-
-	while(1){
-		sleep(2);
-		past_seconds += 2;
-		write_log(2, "%d秒経過しました\n", past_seconds);
-
-		// Vectorのゴミ掃除
-		cleanupConnectClientVec(connectclient_vec);
-		bool result = connectclient_vec.empty();
-		if(result == true){
-			write_log(2, "ループを抜けます\n");
-			break;
-		}
-	}
-
-	write_log(2, "正常終了します\n");
 	return(0);
 }
 
-void sigalrm_handler(int signo, thread_pool _tp)
-{
-	write_log(2, "sig_handler started. signo=%d\n", signo);
-	//ワーカースレッド強制終了します
-	_tp.terminateAllThreads();
-	write_log(2, "ワーカースレッド強制終了しました\n");
-	return;
-}
-
-void sigusr2_handler(int signo){
-	write_log(2, "sig_handler started. signo=%d\n", signo);
-	main_thread_flag = false;
-	write_log(2, "main_thread_flagを書き換えました\n");
-	return;
-}
-	
-///////////////////////////////////////////////////////////////////////////////
-// ソケット切断済みのconnect_clientの解放処理
-///////////////////////////////////////////////////////////////////////////////
-int cleanupConnectClientVec(connectclient_vector& vec)
+int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 {
 	int deleteCount = 0;
 	write_log(2, "konishi *** ゴミ掃除開始 ***");
@@ -424,5 +291,3 @@ int cleanupConnectClientVec(connectclient_vector& vec)
 	write_log(2, "konishi *** deleteCount = %d ***", deleteCount);
 	return deleteCount;
 }
-
-	
