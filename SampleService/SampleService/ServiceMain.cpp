@@ -49,7 +49,7 @@ VOID StopService();
 VOID ResumeService();
 VOID PauseService();
 DWORD ServiceThread(LPDWORD param);
-TcpServer tcpServer;
+TcpServer* tcpServer;
 ///////////////////////////////////////////////////////////////////////////////
 // メイン処理
 ///////////////////////////////////////////////////////////////////////////////
@@ -57,7 +57,6 @@ int main(int argc, char* argv[])
 {
 	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
 	logging::add_common_attributes();
-	/*tcpServer = TcpServer();*/
 
 	bool bRet;
 	
@@ -420,7 +419,7 @@ VOID StopService()
 	//Tcpサーバ停止関数呼び出し
 	write_log(2, "Tcpサーバ停止を開始しました. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
-	tcpServer.StopTcpServer();
+	if(tcpServer != NULL) tcpServer->StopTcpServer();
 
 	DWORD dwRet = WaitForSingleObject(TcpServerMainEnd, 20000); // konishi
 	string strRet = "";
@@ -496,8 +495,15 @@ DWORD ServiceThread(LPDWORD param)
 {
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 	
-	//int result = Tcpserver();
-	int result = tcpServer.Func();
+	try {
+		tcpServer = new TcpServer();
+	}
+	catch (int e) {
+		return -1;
+	}
+
+	int result = tcpServer->Func();
+
 	if(result != 0)
 	{
 		write_log(4, "Tcpserver() ended with error %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
