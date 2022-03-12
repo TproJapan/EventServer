@@ -1,3 +1,4 @@
+#ifdef __GNUC__
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
@@ -37,7 +38,7 @@ int main(int argc, char* argv[])
 	//BoostLog有効化
 	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
 	logging::add_common_attributes();
-	write_log(4, "konishi : main started \n");
+	write_log(4, "main started , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	
 	char work[256];
     pid_t s_pid;
@@ -83,7 +84,7 @@ int main(int argc, char* argv[])
 	pid = fork();
     if (pid == -1 ) 
 	{
-		write_log(4, "Fork has failed in EventServer.cpp\n");
+		write_log(4, "Fork has failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		return -1;
     }
 
@@ -103,14 +104,14 @@ int main(int argc, char* argv[])
     // カレントディレクトリ変更.
     // ルートディレクトリに移動.(デーモンプロセスはルートディレクトリを起点にして作業するから)
     chdir("/");
-	write_log(4, "konishi : after cddir \n");// konishi
+	write_log(4, "after cddir , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	
     // 親から引き継いだ全てのファイルディスクリプタのクローズ.
     for(int i = 0; i < MAXFD; i++){
         close(i);
     }
 
-	write_log(4, "konishi : before open /dev/null \n");// konishi
+	write_log(4, "before open /dev/null , %s %d %s\n", __FILENAME__, __LINE__, __func__);
     // stdin,stdout,stderrをdev/nullでオープン.
     // 単にディスクリプタを閉じるだけだとこれらの出力がエラーになるのでdev/nullにリダイレクトする.
     if((fddevnull = open("/dev/null", O_RDWR, 0) != -1)){
@@ -129,27 +130,27 @@ int main(int argc, char* argv[])
     // デーモン化後の処理
     //------------------------------------------------------
 	//初期化
-	write_log(4, "konishi : before SetServerStatus \n");// konishi
+	write_log(4, "before SetServerStatus , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	SetServerStatus(0);
-	write_log(4, "konishi : after SetServerStatus \n");// konishi
+	write_log(4, "after SetServerStatus , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	
 	//Startプロセス通信用の名前つきパイプを書込専用で開き
     if ((fd_start = open(PIPE_START, O_WRONLY)) == -1)
     {
-		write_log(4, "open PIPE_START failed\n");
+		write_log(4, "open PIPE_START failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
         return -1;
     }
 
 	//Startへプロセスid送信
 	char buff[16];
-	sprintf(buff, "pid = %d", getpid());// konishi
+	sprintf(buff, "pid = %d", getpid());
 	if (write(fd_start, buff, strlen(buff)) != strlen(buff))
 	{
-		write_log(4, "write PIPE_START failed\n");
+		write_log(4, "write PIPE_START failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		close(fd_start);
 		return -1;
 	}
-	write_log(4, "konishi : after pipe wirite \n");// konishi
+	write_log(4, "after pipe wirite , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	
 	//TcpServer作成
 	try{
@@ -161,5 +162,10 @@ int main(int argc, char* argv[])
 
 	tcpServer->Func();
 
+	write_log(4, "Before Destructor run , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	delete tcpServer;
+	write_log(4, "After Destructor run , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+
 	return(0);
 }
+#endif
