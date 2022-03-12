@@ -24,8 +24,8 @@ namespace keywords = boost::log::keywords;
 #define LOG_FILENAME_SERV "boostlog_%N.log"
 
 //level;0(trace),1(debug),2(info),3(warning),4(error),5(fatal)
-extern void init(int level, const char* log_dir, const char* log_filename);
-extern bool write_log(int level, const char* message, ...);
-extern int _vasprintf(char** strp, const char* fmt, va_list ap);
-extern void test1();
-extern void test2();
+void init(int level, const char* log_dir, const char* log_filename);
+bool write_log(int level, const char* message, ...);
+int _vasprintf(char** strp, const char* fmt, va_list ap);
+void test1();
+void test2();

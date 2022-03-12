@@ -509,6 +509,11 @@ DWORD ServiceThread(LPDWORD param)
 		write_log(4, "Tcpserver() ended with error %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
 	}
 	
+
+	write_log(4, "Before Destructor run %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
+	delete tcpServer;
+	write_log(4, "After Destructor run %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
+
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 	return 0;
 }

@@ -1,8 +1,24 @@
 #pragma once
 #include <mutex>
+#ifdef __GNUC__
 ///////////////////////////////////////////////////////////////////////////////
-//クライアント接続クラス
+//引数あり、クラスでの関数オブジェクト
 ///////////////////////////////////////////////////////////////////////////////
+class ConnectClient {
+private:
+	int  _dstSocket;
+public:
+	bool _live;//生存管理フラグ
+	std::mutex	m_mutex;//生存管理フラグ用排他
+public:
+	ConnectClient(int dstSocket);
+	~ConnectClient();
+public:
+	void func();
+};
+#else
+
+
 class ConnectClient {
 private:
 	SOCKET _socket;
@@ -29,3 +45,4 @@ private:
 	// 指定されたイベントハンドルとソケットクローズ、mapからの削除
 	void deleteConnection(HANDLE& hEvent);
 };
+#endif
