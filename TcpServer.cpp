@@ -150,7 +150,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	// ポート番号の設定
 	//nPortNo = 5000;
 	nPortNo = portNo;
-	
+
 	// ソケットの生成(listen用)
 	srcSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (srcSocket == -1) {
@@ -295,7 +295,7 @@ TcpServer::~TcpServer()
 #endif
 }
 
-#ifdef __GNUC__
+#ifndef _WIN64
 bool main_thread_flag = true;
 
 
@@ -530,7 +530,7 @@ int TcpServer::Func() {
 	int nRet;
 
 	while (1) {
-		if (checkServerStatus() == 1) {
+		if (GetServerStatus() == 1) {
 			write_log(2, "メインループを抜けます., %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			break;
 		}
