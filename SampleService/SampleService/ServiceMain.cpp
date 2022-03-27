@@ -1,4 +1,4 @@
-#ifndef __GNUC__
+#ifdef _WIN64
 ///////////////////////////////////////////////////////////////////////////////
 // サービスプログラムのサンプル
 ///////////////////////////////////////////////////////////////////////////////
@@ -20,8 +20,8 @@ LPWSTR SERVICE_NAME = (LPWSTR)L"SampleService";
 ///////////////////////////////////////////////////////////////////////////////
 //CLog logObj;
 SERVICE_STATUS_HANDLE serviceStatusHandle;
-						// 状態情報をSCMとの間で通知しあうために使用するハンドル
-						// RegisterServiceCtrlHandler関数によって作成される
+// 状態情報をSCMとの間で通知しあうために使用するハンドル
+// RegisterServiceCtrlHandler関数によって作成される
 
 // ServiceMainが完了するのを防止するために使用するイベント
 HANDLE terminateEvent = NULL;
@@ -41,10 +41,10 @@ VOID ServiceMain(DWORD argc, LPSTR* argv);
 VOID ServiceCtrlHandler(DWORD controlCode);
 VOID terminate(DWORD error);
 BOOL SendStatusToSCM(DWORD dwCurrentState,
-					DWORD dwWin32ExitCode,
-					DWORD dwServiceSpecificExitCode,
-					DWORD dwCheckPoint,
-					DWORD dwWaitHint);
+	DWORD dwWin32ExitCode,
+	DWORD dwServiceSpecificExitCode,
+	DWORD dwCheckPoint,
+	DWORD dwWaitHint);
 BOOL InitService();
 VOID StopService();
 VOID ResumeService();
@@ -60,7 +60,7 @@ int main(int argc, char* argv[])
 	logging::add_common_attributes();
 
 	bool bRet;
-	
+
 	write_log(2, "main started, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	// サービスメイン関数をSCMに登録する
 	bRet = registServiceMain();
@@ -108,7 +108,7 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 
 	// 即座に登録関数を呼び出す
 	serviceStatusHandle = RegisterServiceCtrlHandler(SERVICE_NAME,
-													(LPHANDLER_FUNCTION)ServiceCtrlHandler);
+		(LPHANDLER_FUNCTION)ServiceCtrlHandler);
 	if (!serviceStatusHandle)
 	{
 		write_log(4, "RegisterServiceCtrlHandler error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
@@ -231,10 +231,10 @@ VOID terminate(DWORD error)
 // サービスの状態を更新する処理をまとめて実行する。
 ///////////////////////////////////////////////////////////////////////////////
 BOOL SendStatusToSCM(DWORD dwCurrentState,
-					DWORD dwWin32ExitCode,
-					DWORD dwServiceSpecificExitCode,
-					DWORD dwCheckPoint,
-					DWORD dwWaitHint)
+	DWORD dwWin32ExitCode,
+	DWORD dwServiceSpecificExitCode,
+	DWORD dwCheckPoint,
+	DWORD dwWaitHint)
 {
 	BOOL success;
 	SERVICE_STATUS status;
@@ -254,8 +254,8 @@ BOOL SendStatusToSCM(DWORD dwCurrentState,
 	else
 	{
 		status.dwControlsAccepted = SERVICE_ACCEPT_STOP |
-									SERVICE_ACCEPT_PAUSE_CONTINUE |
-									SERVICE_ACCEPT_SHUTDOWN;
+			SERVICE_ACCEPT_PAUSE_CONTINUE |
+			SERVICE_ACCEPT_SHUTDOWN;
 	}
 
 	// 特定の終了コードが定義されている場合は
@@ -310,7 +310,7 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 		currentState = SERVICE_STOP_PENDING;
 		// 現在の状態をSCMに通知する
 		success = SendStatusToSCM(SERVICE_STOP_PENDING,
-									NO_ERROR, 0, 1, 5000);
+			NO_ERROR, 0, 1, 5000);
 		// 成功しなかった場合、特に何もしない
 
 		// サービスを停止する
@@ -325,7 +325,7 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 		{
 			// 現在の状態をSCMに通知する
 			success = SendStatusToSCM(SERVICE_PAUSE_PENDING,
-										NO_ERROR, 0, 1, 1000);
+				NO_ERROR, 0, 1, 1000);
 			PauseService();
 			currentState = SERVICE_PAUSED;
 		}
@@ -339,7 +339,7 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 		{
 			// 現在の状態をSCMに通知する
 			success = SendStatusToSCM(SERVICE_CONTINUE_PENDING,
-										NO_ERROR, 0, 1, 1000);
+				NO_ERROR, 0, 1, 1000);
 			ResumeService();
 			currentState = SERVICE_RUNNING;
 		}
@@ -377,8 +377,8 @@ BOOL InitService()
 
 	// サービスのスレッドを開始する
 	threadHandle = CreateThread(0, 0,
-								(LPTHREAD_START_ROUTINE)ServiceThread,
-								0, 0, &id);
+		(LPTHREAD_START_ROUTINE)ServiceThread,
+		0, 0, &id);
 	if (threadHandle == 0)
 	{
 		write_log(4, "CreateThread error. %d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
@@ -420,7 +420,7 @@ VOID StopService()
 	//Tcpサーバ停止関数呼び出し
 	write_log(2, "Tcpサーバ停止を開始しました. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
-	if(tcpServer != NULL) tcpServer->StopTcpServer();
+	if (tcpServer != NULL) tcpServer->StopTcpServer();
 
 	DWORD dwRet = WaitForSingleObject(TcpServerMainEnd, 20000); // konishi
 	string strRet = "";
@@ -495,9 +495,10 @@ VOID PauseService()
 DWORD ServiceThread(LPDWORD param)
 {
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
-	
+
 	try {
-		tcpServer = new TcpServer();
+		//tcpServer = new TcpServer();// konishi
+		tcpServer = new TcpServer(5000);// konishi
 	}
 	catch (int e) {
 		return -1;
@@ -505,11 +506,11 @@ DWORD ServiceThread(LPDWORD param)
 
 	int result = tcpServer->Func();
 
-	if(result != 0)
+	if (result != 0)
 	{
 		write_log(4, "Tcpserver() ended with error %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
 	}
-	
+
 
 	write_log(4, "Before Destructor run %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
 	delete tcpServer;

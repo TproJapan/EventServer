@@ -1,31 +1,46 @@
-#ifdef __GNUC__
-#include "ConnectClient.h"
 #include "BoostLog.h"
 #include "TcpCommon.h"
+#ifndef _WIN64
+#include "ConnectClient.h"
 #include <thread>
 #include <sys/socket.h>
-///////////////////////////////////////////////////////////////////////////////
-// コンストラクタ
-///////////////////////////////////////////////////////////////////////////////
+#else
+#pragma warning(disable:4996)
+#include <WinSock2.h>
+#include "ConnectClient.h"
+#include <boost/asio.hpp>
+#endif
+
+#ifndef _WIN64
 ConnectClient::ConnectClient(int dstSocket)
 {
 	_dstSocket = dstSocket;
 	_live = true;
 }
 
-///////////////////////////////////////////////////////////////////////////////
-// デストラクタ
-///////////////////////////////////////////////////////////////////////////////
 ConnectClient::~ConnectClient()
 {
 
 }
+#else
+ConnectClient::ConnectClient(SOCKET& dstSocket)
+{
+	_socket = dstSocket;
+	_live = true;
+}
+
+ConnectClient::~ConnectClient()
+{
+	if (_socket != INVALID_SOCKET) closesocket(_socket);
+}
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 //ハンドラ制御
 ///////////////////////////////////////////////////////////////////////////////
 void ConnectClient::func()
 {
+#ifndef _WIN64
 	write_log(2, "func started. _dstSocket=%d, %s %d %s\n", _dstSocket, __FILENAME__, __LINE__, __func__);
 
 	while (1) {
@@ -108,40 +123,7 @@ void ConnectClient::func()
 	//while抜けたらフラグ倒す
 	std::lock_guard<std::mutex> lk(m_mutex);
 	_live = false;
-}
 #else
-
-
-#pragma warning(disable:4996)
-#include <WinSock2.h>
-#include "ConnectClient.h"
-#include "TcpCommon.h"
-#include <boost/asio.hpp>
-#include "BoostLog.h"
-
-
-///////////////////////////////////////////////////////////////////////////////
-// コンストラクタ
-///////////////////////////////////////////////////////////////////////////////
-ConnectClient::ConnectClient(SOCKET& tmpsocket)
-{
-	_socket = tmpsocket;
-	_live = true;
-}
-
-///////////////////////////////////////////////////////////////////////////////
-// デストラクタ
-///////////////////////////////////////////////////////////////////////////////
-ConnectClient::~ConnectClient()
-{
-	if (_socket != INVALID_SOCKET) closesocket(_socket);
-}
-
-///////////////////////////////////////////////////////////////////////////////
-//ハンドラ制御
-///////////////////////////////////////////////////////////////////////////////
-void ConnectClient::func()
-{
 	HANDLE tmpEvent = WSACreateEvent();
 
 	//socketとイベント変数を、どの観点のイベントで反応させるかを紐づけ
@@ -158,7 +140,7 @@ void ConnectClient::func()
 
 	while (1) {
 		//サーバーステータスチェック
-		if (checkServerStatus() == 1) break;
+		if (GetServerStatus() == 1) break;
 
 		//強制終了用のinterruption_pointを張る
 		boost::this_thread::interruption_point();
@@ -228,8 +210,10 @@ void ConnectClient::func()
 	_live = false;
 
 	write_log(2, "Finished Thead, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+#endif
 }
 
+#ifdef _WIN64
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントからのデータ受付時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////

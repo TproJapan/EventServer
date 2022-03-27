@@ -9,6 +9,7 @@ class thread_pool
     boost::shared_ptr<boost::asio::io_service::work> work_;
     boost::thread_group group_;
 public:
+    //コンストラクタの中より手前でメンバー変数を初期化したい場合は「:メンバー変数」の書き方をする
     thread_pool(boost::asio::io_service& io_service, std::size_t size)
         : io_service_(io_service)
     {
