@@ -1,4 +1,4 @@
-#ifdef __GNUC__
+#ifndef _WIN64
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>
@@ -162,9 +162,9 @@ int main(int argc, char* argv[])
 
 	tcpServer->Func();
 
-	write_log(4, "Before Destructor run , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	write_log(2, "Before Destructor run , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	delete tcpServer;
-	write_log(4, "After Destructor run , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	write_log(2, "After Destructor run , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	return(0);
 }

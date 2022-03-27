@@ -14,10 +14,10 @@ public:
         : io_service_(io_service)
     {
         work_.reset(new boost::asio::io_service::work(io_service_));
-        //group_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service_));  //konishi
-    	for (std::size_t i = 0; i < size; ++i) {                                           // konishi
-            group_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service_));// konishi
-        }                                                                                  // konishi
+        //group_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service_));
+    	for (std::size_t i = 0; i < size; ++i) {
+            group_.create_thread(boost::bind(&boost::asio::io_service::run, &io_service_));
+        }
     }
 
     ~thread_pool()

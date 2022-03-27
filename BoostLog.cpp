@@ -8,7 +8,11 @@ bool write_log(int level, const char* message, ...)
     va_list ap;
     char* allocBuf;
     va_start(ap, message);
+#ifdef _WIN64
+    int nSize = _vasprintf(&allocBuf, message, ap);
+#else
     int nSize = vasprintf(&allocBuf, message, ap);
+#endif
     va_end(ap);
 
     if (nSize == 0) {
@@ -20,25 +24,17 @@ bool write_log(int level, const char* message, ...)
 
     //BOOST_LOG_SEV(lg, (boost::log::v2s_mt_nt6::trivial::severity_level)level) << allocBuf;
     //BOOST_LOG_SEV(lg, level) << allocBuf;	// konishi
-    //BOOST_LOG_SEV(lg, (boost::log::v2s_mt_posix::trivial::severity_level)level) << allocBuf;// konishi
-	BOOST_LOG_SEV(lg, (boost::log::trivial::severity_level)level) << allocBuf;// konishi
+    //BOOST_LOG_SEV(lg, (boost::log::v2s_mt_posix::trivial::severity_level)level) << allocBuf;
+#ifdef _WIN64
+    BOOST_LOG_SEV(lg, (boost::log::v2s_mt_nt6::trivial::severity_level)level) << allocBuf;
+#else
+    BOOST_LOG_SEV(lg, (boost::log::trivial::severity_level)level) << allocBuf;
+#endif
 
     free(allocBuf);
     return true;
 }
-#if 0 // konishi
-int vasprintf(char** strp, const char* fmt, va_list ap) {
-    char* buf = (char*)malloc(_vscprintf(fmt, ap) + 1);
-    if (buf == NULL) {
-        if (strp != NULL) {
-            *strp = NULL;
-        }
-        return -1;
-    }
-    *strp = buf;
-    return vsprintf(buf, fmt, ap);
-}
-#endif //konishi
+
 ///////////////////////////////////////////////////////////////////////////////
 // init
 ///////////////////////////////////////////////////////////////////////////////
@@ -47,17 +43,17 @@ void init(int level, const char* log_dir, const char* log_filename)
     namespace expr = boost::log::expressions;
 
     char file_name[1024];
-#ifdef _WIN32 // konishi
+#ifdef _WIN64
     sprintf_s(file_name, "%s\\%s", log_dir, log_filename);
-#else  // konishi
-    sprintf(file_name, "%s/%s", log_dir, log_filename); // konishi
-#endif // konishi
+#else
+    sprintf(file_name, "%s/%s", log_dir, log_filename);
+#endif
 
     logging::add_file_log
     (
         keywords::open_mode = (std::ios::out | std::ios::app),
         keywords::file_name = file_name,
-        keywords::rotation_size = 100 * 1024,
+        keywords::rotation_size = 1024 * 1024,
         keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
         //keywords::time_based_rotation = sinks::file::rotation_at_time_interval(boost::posix_time::seconds(30)),
         keywords::target = log_dir,
@@ -74,8 +70,22 @@ void init(int level, const char* log_dir, const char* log_filename)
     );
 
     //logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::v2s_mt_nt6::trivial::severity_level)level);//konishi
-	//logging::core::get()->set_filter(logging::trivial::severity >= level); // konishi
+    //logging::core::get()->set_filter(logging::trivial::severity >= level); // konishi
     //logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::v2s_mt_posix::trivial::severity_level)level); // konishi
     logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::trivial::severity_level)level); // konishi
 
 }
+
+#ifdef _WIN64
+int _vasprintf(char** strp, const char* fmt, va_list ap) {
+    char* buf = (char*)malloc(_vscprintf(fmt, ap) + 1);
+    if (buf == NULL) {
+        if (strp != NULL) {
+            *strp = NULL;
+        }
+        return -1;
+    }
+    *strp = buf;
+    return vsprintf(buf, fmt, ap);
+}
+#endif
