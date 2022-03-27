@@ -295,7 +295,7 @@ TcpServer::~TcpServer()
 #endif
 }
 
-#ifdef __GNUC__
+#ifndef _WIN64
 bool main_thread_flag = true;
 
 

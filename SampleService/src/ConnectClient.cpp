@@ -12,28 +12,24 @@
 #endif
 
 #ifndef _WIN64
-ConnectClient::ConnectClient(int dstSocket)
-{
-	_dstSocket = dstSocket;
-	_live = true;
-}
+#define INVALID_SOCKET (-1)
+#endif
 
 ConnectClient::~ConnectClient()
 {
-
-}
+#ifdef _WIN64
+	if (_socket != INVALID_SOCKET) closesocket(_socket);
 #else
-ConnectClient::ConnectClient(SOCKET& dstSocket)
+	if (_socket != INVALID_SOCKET) close(_socket);
+#endif
+}
+
+ConnectClient::ConnectClient(SOCKET dstSocket)
 {
 	_socket = dstSocket;
 	_live = true;
 }
 
-ConnectClient::~ConnectClient()
-{
-	if (_socket != INVALID_SOCKET) closesocket(_socket);
-}
-#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 //ハンドラ制御
@@ -41,7 +37,7 @@ ConnectClient::~ConnectClient()
 void ConnectClient::func()
 {
 #ifndef _WIN64
-	write_log(2, "func started. _dstSocket=%d, %s %d %s\n", _dstSocket, __FILENAME__, __LINE__, __func__);
+	write_log(2, "func started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 
 	while (1) {
 		//終了確認
@@ -53,7 +49,7 @@ void ConnectClient::func()
 		///////////////////////////////////
 		// 通信
 		///////////////////////////////////
-		write_log(2, "client(%d)クライアントとの通信を開始します, %s %d %s\n", _dstSocket, __FILENAME__, __LINE__, __func__);
+		write_log(2, "client(%d)クライアントとの通信を開始します, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 		size_t stSize;
 		char buf[1024];
 
@@ -65,7 +61,7 @@ void ConnectClient::func()
 		fd_set  readfds;//ビットフラグ管理変数
 		FD_ZERO(&readfds);//初期化
 
-		FD_SET(_dstSocket, &readfds);
+		FD_SET(_socket, &readfds);
 
 		int nRet = select(FD_SETSIZE,
 			&readfds,
@@ -88,14 +84,14 @@ void ConnectClient::func()
 			continue;
 		}
 
-		stSize = recv(_dstSocket,
+		stSize = recv(_socket,
 			buf,
 			sizeof(buf),
 			0);
 		if (stSize <= 0) {
 			write_log(4, "recv error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-			write_log(4, "クライアント(%d)との接続が切れました, %s %d %s\n", _dstSocket, __FILENAME__, __LINE__, __func__);
-			close(_dstSocket);
+			write_log(4, "クライアント(%d)との接続が切れました, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+			close(_socket);
 			break;
 		}
 
@@ -107,7 +103,7 @@ void ConnectClient::func()
 		}
 
 		// クライアントに返信
-		stSize = send(_dstSocket,
+		stSize = send(_socket,
 			buf,
 			strlen(buf) + 1,
 			0);
@@ -115,7 +111,7 @@ void ConnectClient::func()
 		if (stSize != strlen(buf) + 1) {
 			write_log(4, "send error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			write_log(4, "クライアントとの接続が切れました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-			close(_dstSocket);
+			close(_socket);
 			break;
 		}
 		write_log(2, "変換後:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
