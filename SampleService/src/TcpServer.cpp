@@ -46,7 +46,6 @@ connectclient_vector connectclient_vec;
 #define SOCKET_ERROR	(-1)
 #endif
 
-
 TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 {
 #ifdef _WIN64
@@ -212,8 +211,6 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	}
 }
 
-
-
 TcpServer::~TcpServer()
 {
 #ifdef _WIN64
@@ -315,47 +312,11 @@ void TcpServer::sigusr2_handler(int signo) {
 	return;
 }
 
-/*
-TcpServer::~TcpServer() {
-	int nRet = 0;
-
-	// 接続待ちソケットのクローズ
-	nRet = close(srcSocket);
-	if (nRet == -1) {
-		write_log(4, "close error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-	}
-
-	SetServerStatus(1);
-
-	//sigalerm発行
-	alarm(60);
-	write_log(2, "alarmがセットされました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
-	int past_seconds = 0;
-
-	while (1) {
-		sleep(2);
-		past_seconds += 2;
-		write_log(2, "%d秒経過しました, %s %d %s\n", past_seconds, __FILENAME__, __LINE__, __func__);
-
-		// Vectorのゴミ掃除
-		cleanupConnectClientVec(connectclient_vec);
-		bool result = connectclient_vec.empty();
-		if (result == true) {
-			write_log(2, "ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-			break;
-		}
-	}
-
-	write_log(2, "正常終了します, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-}
-*/
-
 int TcpServer::Func() {
 	int nRet = 0;
 
 	while (main_thread_flag) {
-		int dstSocket = -1;		// クライアントとの通信ソケット
+		//int dstSocket = -1;		// クライアントとの通信ソケット
 
 		// Vectorのゴミ掃除
 		cleanupConnectClientVec(connectclient_vec); // konishi
@@ -412,34 +373,9 @@ int TcpServer::Func() {
 
 		//TODO 現在接続数がCLIANT_MAX数より少ないかチェック
 		//多かったら新規接続を受け付けない
-
 		 // 新規のクライアントから接続要求がきた
 		if (FD_ISSET(srcSocket, &readfds)) {
-			write_log(2, "クライアント接続要求を受け付けました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
-			struct sockaddr_in dstAddr;
-			int dstAddrSize = sizeof(dstAddr);
-
-			//新規クライアント用socket確保
-			dstSocket = accept(srcSocket,
-				(struct sockaddr*)&dstAddr,
-				(socklen_t*)&dstAddrSize);
-			if (dstSocket == -1) {
-				write_log(4, "accept error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-				continue;
-			}
-
-			write_log(2, "[%s]から接続を受けました. socket=%d, %s %d %s\n",
-				inet_ntoa(dstAddr.sin_addr),
-				dstSocket, __FILENAME__, __LINE__, __func__);
-
-			//プールスレッドにバインド
-			ConnectClient* h = new ConnectClient(dstSocket);
-			//vectorに追加
-			connectclient_vec.push_back(h); //konishi
-
-			write_log(2, "*** h=%p, dstSocket=%d, %s %d %s\n", h, dstSocket, __FILENAME__, __LINE__, __func__);
-			tp.post(boost::bind(&ConnectClient::func, h));
+			acceptHandler(srcSocket, tp);// クライアントから新規接続を検知
 		}
 	}
 
@@ -470,61 +406,6 @@ int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 	return deleteCount;
 }
 #else
-
-
-
-
-///////////////////////////////////////////////////////////////////////////////
-// メイン処理
-///////////////////////////////////////////////////////////////////////////////
-//connectclient_vector connectclient_vec;
-
-/*
-TcpServer::~TcpServer() {
-	//パイプと、それに関連つけたイベントクローズ
-	DisconnectNamedPipe(hPipe);
-	CloseHandle(eventConnect);
-
-	//listenソケットと、それに関連づけたイベントクローズ
-	closesocket(srcSocket);
-	CloseHandle(hEvent);
-
-	//スレッド数カウント一定回数定期実行
-	int count = 10;
-	int duration = 2000;
-	int worker_threadNum;
-
-	while (1) {
-		// Vectorのゴミ掃除
-		cleanupConnectClientVec(connectclient_vec);
-		bool result = connectclient_vec.empty();
-
-		if (result == true) {
-			write_log(2, "connectclient_vecがempty。ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-			break;
-		}
-
-		count--;
-
-		if (count <= 0) {
-			write_log(2, "タイムアップ。connectclient_vec残%d。強制終了します%s %d %s\n", connectclient_vec.size(), __FILENAME__, __LINE__, __func__);
-			break;
-		}
-
-		Sleep(duration);
-	}
-
-	//Winsock終了処理
-	WSACleanup();
-
-	//printf("終了しました\n");
-	write_log(2, "Tcpサーバー停止処理を終了しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
-	//サービス側に終了を知らせる
-	SetEvent(TcpServerMainEnd);
-}
-*/
-
 
 int TcpServer::Func() {
 	int nRet;
@@ -685,6 +566,7 @@ int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 	write_log(2, "konishi *** deleteCount = %d ***, %s %d %s", deleteCount, __FILENAME__, __LINE__, __func__);
 	return deleteCount;
 }
+#endif
 
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントから新規接続受付時のハンドラ
@@ -692,26 +574,26 @@ int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 bool TcpServer::acceptHandler(SOCKET& sock, thread_pool& tp)
 {
 	write_log(2, "クライアント接続要求を受け付けました %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
-	int	addrlen;
 	struct sockaddr_in dstAddr;
-	addrlen = sizeof(dstAddr);
-
+	int addrlen = sizeof(dstAddr);
+#ifdef _WIN64
 	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, &addrlen);
 	if (newSock == INVALID_SOCKET)
 	{
 		write_log(5, "accept error. (%ld) %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
-		return true;
+		return false;
 	}
-
+#else
+	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, (socklen_t*)&addrlen);
+	if (newSock == -1) {
+		write_log(4, "accept error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		return false;
+	}
+#endif
 	write_log(2, "[%s]から接続を受けました. newSock=%d, %s %d %s\n", inet_ntoa(dstAddr.sin_addr), newSock, __FILENAME__, __LINE__, __func__);
-
-
 	//プールスレッドにバインド
 	ConnectClient* h = new ConnectClient(newSock);
 	tp.post(boost::bind(&ConnectClient::func, h));
-	connectclient_vec.push_back(h);	//vectorに追加
-
+	connectclient_vec.push_back(h); //vectorに追加
 	return true;
 }
-#endif
