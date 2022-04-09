@@ -84,37 +84,8 @@ void ConnectClient::func()
 			continue;
 		}
 
-		stSize = recv(_socket,
-			buf,
-			sizeof(buf),
-			0);
-		if (stSize <= 0) {
-			write_log(4, "recv error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-			write_log(4, "クライアント(%d)との接続が切れました, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
-			close(_socket);
-			break;
-		}
-
-		write_log(2, "変換前:[%s] ==> , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
-		for (int i = 0; i < stSize; i++) { // bufの中の小文字を大文字に変換
-			if (isalpha(buf[i])) {
-				buf[i] = toupper(buf[i]);
-			}
-		}
-
-		// クライアントに返信
-		stSize = send(_socket,
-			buf,
-			strlen(buf) + 1,
-			0);
-
-		if (stSize != strlen(buf) + 1) {
-			write_log(4, "send error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
-			write_log(4, "クライアントとの接続が切れました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-			close(_socket);
-			break;
-		}
-		write_log(2, "変換後:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+        // クライアントとの通信ソケットにデータが到着した
+        recvHandler();
 	}
 	//while抜けたらフラグ倒す
 	std::lock_guard<std::mutex> lk(m_mutex);
@@ -189,7 +160,6 @@ void ConnectClient::func()
 		}
 	}
 
-#if 1
 	if (_socket != INVALID_SOCKET) {
 		closesocket(_socket);
 		_socket = INVALID_SOCKET;
@@ -199,7 +169,6 @@ void ConnectClient::func()
 		CloseHandle(tmpEvent);
 		tmpEvent = INVALID_HANDLE_VALUE;
 	}
-#endif
 
 	//while抜けたらフラグ倒す
 	std::lock_guard<std::mutex> lk(m_mutex);
@@ -209,21 +178,26 @@ void ConnectClient::func()
 #endif
 }
 
-#ifdef _WIN64
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントからのデータ受付時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////
+#ifdef _WIN64
 bool ConnectClient::recvHandler(HANDLE& hEvent)
+#else
+bool ConnectClient::recvHandler()
+#endif
 {
 	write_log(2, "クライアント(%ld)からデータを受信, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
-
 	char buf[1024];
 	int stSize = recv(_socket, buf, sizeof(buf), 0);
 	if (stSize <= 0) {
 		write_log(4, "recv error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		write_log(4, "クライアント(%ld)との接続が切れました, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
-
+#ifdef _WIN64
 		deleteConnection(hEvent);
+#else
+        close(_socket);
+#endif
 		return true;
 	}
 
@@ -237,18 +211,23 @@ bool ConnectClient::recvHandler(HANDLE& hEvent)
 
 	// クライアントに返信
 	stSize = send(_socket, buf, strlen(buf) + 1, 0);
+
 	if (stSize != strlen(buf) + 1) {
 		write_log(4, "send error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		write_log(4, "クライアントとの接続が切れました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-
+#ifdef _WIN64
 		deleteConnection(hEvent);
+#else
+        close(_socket);
+#endif
 		return true;
 	}
 
-	write_log(2, "変換後:[%s] %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+	write_log(2, "変換後:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 	return true;
 }
 
+#ifdef _WIN64
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントとの通信ソケットの切断検知時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////

@@ -9,6 +9,7 @@
 #include <arpa/inet.h>
 #include <stdlib.h>
 #include <errno.h>
+typedef int SOCKET;
 #else
 #ifdef _WIN64
 #pragma warning(disable:4996)
@@ -57,12 +58,7 @@ int main(int argc, char* argv[])
     ///////////////////////////////////
     //空のソケットの生成
     ///////////////////////////////////
-#ifdef _WIN64
-    SOCKET dstSocket;
-#else
-    int dstSocket;
-#endif
-    dstSocket = socket(AF_INET, SOCK_STREAM, 0);
+    SOCKET dstSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (dstSocket == -1) {
         printf("ソケットの作成に失敗\n");
         return(-1);

@@ -17,11 +17,14 @@ class ConnectClient {
 		int  _socket;
 	public:
 		ConnectClient(SOCKET dstSocket);
-#ifdef _WIN64
 	private:
+#ifdef _WIN64
 		// クライアントからのデータ受付時のハンドラ
 		bool recvHandler(HANDLE& hEvent);
-
+#else
+		bool recvHandler();
+#endif
+#ifdef _WIN64
 		// クライアントとの通信ソケットの切断検知時のハンドラ
 		bool closeHandler(HANDLE& hEvent);
 
