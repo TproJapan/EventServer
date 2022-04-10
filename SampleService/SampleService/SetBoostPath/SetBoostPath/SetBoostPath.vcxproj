@@ -21,8 +21,8 @@
   <PropertyGroup Label="Globals">
     <VCProjectVersion>16.0</VCProjectVersion>
     <Keyword>Win32Proj</Keyword>
-    <ProjectGuid>{fedab0bf-4255-46ff-9de8-d4f2331fd62d}</ProjectGuid>
-    <RootNamespace>SampleService</RootNamespace>
+    <ProjectGuid>{3563ef53-a198-48d9-8d2e-d1563de81044}</ProjectGuid>
+    <RootNamespace>SetBoostPath</RootNamespace>
     <WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
@@ -114,16 +114,12 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions);_CRT_SECURE_NO_WARNINGS</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-<AdditionalIncludeDirectories>C:\Program Files\boost\boost_1_76_0\include\boost-1_76
-</AdditionalIncludeDirectories>
-</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-<AdditionalLibraryDirectories>C:\Program Files\boost\boost_1_76_0\lib</AdditionalLibraryDirectories>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -143,18 +139,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\src\BoostLog.cpp" />
-    <ClCompile Include="..\src\TcpCommon.cpp" />
-    <ClCompile Include="..\src\ConnectClient.cpp" />
-    <ClCompile Include="..\src\TcpServer.cpp" />
-    <ClCompile Include="ServiceMain.cpp" />
+    <ClCompile Include="..\src\Func.cpp" />
+    <ClCompile Include="..\src\SetBoostPath.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\src\BoostLog.h" />
-    <ClInclude Include="..\src\TcpCommon.h" />
-    <ClInclude Include="..\src\ConnectClient.h" />
-    <ClInclude Include="..\src\TcpServer.h" />
-    <ClInclude Include="..\src\thread_pool.h" />
+    <ClInclude Include="..\src\Func.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
