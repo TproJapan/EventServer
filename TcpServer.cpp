@@ -44,6 +44,8 @@ connectclient_vector connectclient_vec;
 
 #ifndef _WIN64
 #define SOCKET_ERROR	(-1)
+#define INVALID_SOCKET	(-1)
+#define WSAGetLastError()	errno
 #endif
 
 TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
@@ -576,20 +578,13 @@ bool TcpServer::acceptHandler(SOCKET& sock, thread_pool& tp)
 	write_log(2, "クライアント接続要求を受け付けました %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	struct sockaddr_in dstAddr;
 	int addrlen = sizeof(dstAddr);
-#ifdef _WIN64
-	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, &addrlen);
-	if (newSock == INVALID_SOCKET)
-	{
+
+	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, (socklen_t*)&addrlen);
+	if (newSock == -1) {
 		write_log(5, "accept error. (%ld) %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return false;
 	}
-#else
-	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, (socklen_t*)&addrlen);
-	if (newSock == -1) {
-		write_log(4, "accept error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-		return false;
-	}
-#endif
+
 	write_log(2, "[%s]から接続を受けました. newSock=%d, %s %d %s\n", inet_ntoa(dstAddr.sin_addr), newSock, __FILENAME__, __LINE__, __func__);
 	//プールスレッドにバインド
 	ConnectClient* h = new ConnectClient(newSock);
