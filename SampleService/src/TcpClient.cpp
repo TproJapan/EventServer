@@ -1,4 +1,4 @@
-#include <stdio.h>
+ï»¿#include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
 #ifndef _WIN64
@@ -25,20 +25,20 @@ typedef int SOCKET;
 int main(int argc, char* argv[])
 {
     ///////////////////////////////////
-    // ƒRƒ}ƒ“ƒhˆø”‚Ì‰ğÍ
+    // ã‚³ãƒãƒ³ãƒ‰å¼•æ•°ã®è§£æ
     ///////////////////////////////////
     if (argc != 3) {
         printf("TcpClient IPAddress portNo\n");
         return -1;
     }
 
-    char destination[32];   // ‘—MæIPƒAƒhƒŒƒX
-    int nPortNo;            // ƒ|[ƒg”Ô†
+    char destination[32];   // é€ä¿¡å…ˆIPã‚¢ãƒ‰ãƒ¬ã‚¹
+    int nPortNo;            // ãƒãƒ¼ãƒˆç•ªå·
     strcpy(destination, argv[1]);
     nPortNo = atol(argv[2]);
 
     ///////////////////////////////////
-    //sockaddr_in \‘¢‘Ì‚Ìì¬
+    //sockaddr_in æ§‹é€ ä½“ã®ä½œæˆ
     ///////////////////////////////////
     struct sockaddr_in dstAddr;
     memset(&dstAddr, 0, sizeof(dstAddr));
@@ -56,42 +56,42 @@ int main(int argc, char* argv[])
     }
 #endif
     ///////////////////////////////////
-    //‹ó‚Ìƒ\ƒPƒbƒg‚Ì¶¬
+    //ç©ºã®ã‚½ã‚±ãƒƒãƒˆã®ç”Ÿæˆ
     ///////////////////////////////////
     SOCKET dstSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (dstSocket == -1) {
-        printf("ƒ\ƒPƒbƒg‚Ìì¬‚É¸”s\n");
+        printf("ã‚½ã‚±ãƒƒãƒˆã®ä½œæˆã«å¤±æ•—\n");
         return(-1);
     }
 
     ///////////////////////////////////////////////////////
-    //‹ó‚Ìƒ\ƒPƒbƒg‚Ésockaddr_in\‘¢‘Ì‚ğbind‚µ‚ÄƒT[ƒo‚ÉÚ‘±
+    //ç©ºã®ã‚½ã‚±ãƒƒãƒˆã«sockaddr_inæ§‹é€ ä½“ã‚’bindã—ã¦ã‚µãƒ¼ãƒã«æ¥ç¶š
     ///////////////////////////////////////////////////////
     int nRet;
     nRet = connect(dstSocket,
         (struct sockaddr*)&dstAddr,
         sizeof(dstAddr));
     if (nRet == -1) {
-        printf("%s ‚ÉÚ‘±‚Å‚«‚Ü‚¹‚ñ‚Å‚µ‚½\n", destination);
+        printf("%s ã«æ¥ç¶šã§ãã¾ã›ã‚“ã§ã—ãŸ\n", destination);
         return(-1);
     }
-    printf("%s ‚ÉÚ‘±‚µ‚Ü‚µ‚½\n", destination);
+    printf("%s ã«æ¥ç¶šã—ã¾ã—ãŸ\n", destination);
 
     ///////////////////////////////////
-    //@ƒT[ƒo‚Æ‚Ì’ÊM
+    //ã€€ã‚µãƒ¼ãƒã¨ã®é€šä¿¡
     ///////////////////////////////////
     while (1) {
-        // ‘—M‚·‚éƒf[ƒ^‚Ì“Ç‚İ‚İ
+        // é€ä¿¡ã™ã‚‹ãƒ‡ãƒ¼ã‚¿ã®èª­ã¿è¾¼ã¿
         char   buf[1024];
-        printf("q•¶š‚ÌƒAƒ‹ƒtƒ@ƒxƒbƒg‚ğ“ü—Í‚µ‚Ä‚­‚¾‚³‚¢\n");
+        printf("å­æ–‡å­—ã®ã‚¢ãƒ«ãƒ•ã‚¡ãƒ™ãƒƒãƒˆã‚’å…¥åŠ›ã—ã¦ãã ã•ã„\n");
         scanf("%s", buf);
 
         if (strcmp(buf, ".") == 0) {
-            printf("ˆ—‚ğI—¹‚µ‚Ü‚·\n");
+            printf("å‡¦ç†ã‚’çµ‚äº†ã—ã¾ã™\n");
             break;
         }
 
-        //@ƒf[ƒ^‚Ì‘—M
+        //ã€€ãƒ‡ãƒ¼ã‚¿ã®é€ä¿¡
         size_t stSize;
         stSize = send(dstSocket,
             buf,
@@ -102,20 +102,20 @@ int main(int argc, char* argv[])
             break;
         }
 
-        // ƒT[ƒo‚©‚ç‚Ì‰“š‚ğóM
+        // ã‚µãƒ¼ãƒã‹ã‚‰ã®å¿œç­”ã‚’å—ä¿¡
         stSize = recv(dstSocket,
             buf,
             sizeof(buf),
             0);
         if (stSize <= 0) {
-            printf("recv error.@errno = %d\n", errno);//ƒGƒ‰[ƒiƒ“ƒo[‚ª0‚È‚çˆÙíI—¹
-            printf("stSize = %d\n", (int)stSize);//stSize‚ª0‚È‚çƒ\ƒPƒbƒg‚ªØ‚ê‚½‚ÆŒ¾‚¤–B¸”s‚Í‚¾‚¢‚½‚¢stSize‚ª-1‚¾‚Æerrno‚Í4‚Æ‚©
+            printf("recv error.ã€€errno = %d\n", errno);//ã‚¨ãƒ©ãƒ¼ãƒŠãƒ³ãƒãƒ¼ãŒ0ãªã‚‰ç•°å¸¸çµ‚äº†
+            printf("stSize = %d\n", (int)stSize);//stSizeãŒ0ãªã‚‰ã‚½ã‚±ãƒƒãƒˆãŒåˆ‡ã‚ŒãŸã¨è¨€ã†äº‹ã€‚å¤±æ•—ã¯ã ã„ãŸã„stSizeãŒ-1ã ã¨errnoã¯4ã¨ã‹
             break;
         }
-        printf("¨ %s\n", buf);
+        printf("â†’ %s\n", buf);
     }
 
-    // ƒ\ƒPƒbƒg‚ğƒNƒ[ƒY
+    // ã‚½ã‚±ãƒƒãƒˆã‚’ã‚¯ãƒ­ãƒ¼ã‚º
 #ifdef _WIN64
     closesocket(dstSocket); // konishi
 #else
