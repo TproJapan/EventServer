@@ -118,7 +118,6 @@
       <ConformanceMode>true</ConformanceMode>
 <AdditionalIncludeDirectories>C:\Program Files\boost\boost_1_76_0\include\boost-1_76
 </AdditionalIncludeDirectories>
-</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
