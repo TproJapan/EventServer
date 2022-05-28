@@ -32,7 +32,7 @@ ConnectClient::ConnectClient(SOCKET dstSocket)
 
 
 ///////////////////////////////////////////////////////////////////////////////
-//ãƒãƒ³ãƒ‰ãƒ©åˆ¶å¾¡
+//ƒnƒ“ƒhƒ‰§Œä
 ///////////////////////////////////////////////////////////////////////////////
 void ConnectClient::func()
 {
@@ -40,26 +40,26 @@ void ConnectClient::func()
 	write_log(2, "func started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 
 	while (1) {
-		//çµ‚äº†ç¢ºèª
+		//I—¹Šm”F
 		if (GetServerStatus() == 1) {
-			write_log(2, "Thread:%sã‚’çµ‚äº†ã—ã¾ã™, %s %d %s\n", std::this_thread::get_id(), __FILENAME__, __LINE__, __func__);
+			write_log(2, "Thread:%s‚ğI—¹‚µ‚Ü‚·, %s %d %s\n", std::this_thread::get_id(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		///////////////////////////////////
-		// é€šä¿¡
+		// ’ÊM
 		///////////////////////////////////
-		write_log(2, "client(%d)ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚’é–‹å§‹ã—ã¾ã™, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+		write_log(2, "client(%d)ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊM‚ğŠJn‚µ‚Ü‚·, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 		size_t stSize;
 		char buf[1024];
 
-		// ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆã®è¨­å®š
+		// ƒ^ƒCƒ€ƒAƒEƒg‚Ìİ’è
 		struct timeval  tval;
-		tval.tv_sec = SELECT_TIMER_SEC;	// time_t  ç§’
-		tval.tv_usec = SELECT_TIMER_USEC;	// suseconds_t  ãƒã‚¤ã‚¯ãƒ­ç§’
+		tval.tv_sec = SELECT_TIMER_SEC;	// time_t  •b
+		tval.tv_usec = SELECT_TIMER_USEC;	// suseconds_t  ƒ}ƒCƒNƒ•b
 
-		fd_set  readfds;//ãƒ“ãƒƒãƒˆãƒ•ãƒ©ã‚°ç®¡ç†å¤‰æ•°
-		FD_ZERO(&readfds);//åˆæœŸåŒ–
+		fd_set  readfds;//ƒrƒbƒgƒtƒ‰ƒOŠÇ—•Ï”
+		FD_ZERO(&readfds);//‰Šú‰»
 
 		FD_SET(_socket, &readfds);
 
@@ -70,52 +70,52 @@ void ConnectClient::func()
 			&tval);
 
 		if (nRet == -1) {
-			if (errno == EINTR) {//ã‚·ã‚°ãƒŠãƒ«å‰²ã‚Šè¾¼ã¿ã¯é™¤å¤–
+			if (errno == EINTR) {//ƒVƒOƒiƒ‹Š„‚è‚İ‚ÍœŠO
 				continue;
 			}
 			else {
-				// selectãŒç•°å¸¸çµ‚äº†
+				// select‚ªˆÙíI—¹
 				write_log(4, "select error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 				break;
 			}
 		}
 		else if (nRet == 0) {
-			write_log(2, "workerã‚¹ãƒ¬ãƒƒãƒ‰ã§ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆç™ºç”Ÿ, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			write_log(2, "workerƒXƒŒƒbƒh‚Åƒ^ƒCƒ€ƒAƒEƒg”­¶, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
-        // ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã«ãƒ‡ãƒ¼ã‚¿ãŒåˆ°ç€ã—ãŸ
-        recvHandler();
+		// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚Éƒf[ƒ^‚ª“’…‚µ‚½
+		recvHandler();
 	}
-	//whileæŠœã‘ãŸã‚‰ãƒ•ãƒ©ã‚°å€’ã™
+	//while”²‚¯‚½‚çƒtƒ‰ƒO“|‚·
 	std::lock_guard<std::mutex> lk(m_mutex);
 	_live = false;
 #else
 	HANDLE tmpEvent = WSACreateEvent();
 
-	//socketã¨ã‚¤ãƒ™ãƒ³ãƒˆå¤‰æ•°ã‚’ã€ã©ã®è¦³ç‚¹ã®ã‚¤ãƒ™ãƒ³ãƒˆã§åå¿œã•ã›ã‚‹ã‹ã‚’ç´ã¥ã‘
+	//socket‚ÆƒCƒxƒ“ƒg•Ï”‚ğA‚Ç‚ÌŠÏ“_‚ÌƒCƒxƒ“ƒg‚Å”½‰‚³‚¹‚é‚©‚ğ•R‚Ã‚¯
 	int nRet = WSAEventSelect(_socket, tmpEvent, FD_READ | FD_CLOSE);
 	if (nRet == SOCKET_ERROR) {
 		write_log(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return;
 	}
 
-	//ã‚¤ãƒ™ãƒ³ãƒˆã‚’é…åˆ—ã§ç®¡ç†
+	//ƒCƒxƒ“ƒg‚ğ”z—ñ‚ÅŠÇ—
 	const int workierEventNum = 1;
 	HANDLE workerEventList[workierEventNum];
 	workerEventList[0] = tmpEvent;
 
 	while (1) {
-		//ã‚µãƒ¼ãƒãƒ¼ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒã‚§ãƒƒã‚¯
+		//ƒT[ƒo[ƒXƒe[ƒ^ƒXƒ`ƒFƒbƒN
 		if (GetServerStatus() == 1) break;
 
-		//å¼·åˆ¶çµ‚äº†ç”¨ã®interruption_pointã‚’å¼µã‚‹
+		//‹­§I—¹—p‚Ìinterruption_point‚ğ’£‚é
 		boost::this_thread::interruption_point();
 
-		write_log(2, "æ›¸ãè¾¼ã¿ã‚’å¾…ã£ã¦ã„ã¾ã™.,%s %d %s\n", __FILENAME__, __LINE__, __func__);
+		write_log(2, "‘‚«‚İ‚ğ‘Ò‚Á‚Ä‚¢‚Ü‚·.,%s %d %s\n", __FILENAME__, __LINE__, __func__);
 		DWORD worker_dwTimeout = TIMEOUT_MSEC;
 
-		//ã‚¤ãƒ™ãƒ³ãƒˆå¤šé‡å¾…ã¡
+		//ƒCƒxƒ“ƒg‘½d‘Ò‚¿
 		int worker_nRet = WSAWaitForMultipleEvents(workierEventNum,
 			workerEventList,
 			FALSE,
@@ -128,16 +128,16 @@ void ConnectClient::func()
 		}
 
 		if (worker_nRet == WSA_WAIT_TIMEOUT) {
-			write_log(2, "ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆç™ºç”Ÿã§ã™!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			write_log(2, "ƒ^ƒCƒ€ƒAƒEƒg”­¶‚Å‚·!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
 		write_log(2, "WSAWaitForMultipleEvents nRet=%ld, %s %d %s\n", worker_nRet, __FILENAME__, __LINE__, __func__);
 
-		// ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ¤œçŸ¥ã—ãŸHANDLE
+		// ƒCƒxƒ“ƒg‚ğŒŸ’m‚µ‚½HANDLE
 		HANDLE workerHandle = workerEventList[worker_nRet];
 
-		//ã‚¤ãƒ™ãƒ³ãƒˆèª¿æŸ»
+		//ƒCƒxƒ“ƒg’²¸
 		WSANETWORKEVENTS events;
 		if (WSAEnumNetworkEvents(_socket, workerHandle, &events) == SOCKET_ERROR)
 		{
@@ -148,14 +148,14 @@ void ConnectClient::func()
 		//READ
 		if (events.lNetworkEvents & FD_READ)
 		{
-			// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã«ãƒ‡ãƒ¼ã‚¿ãŒåˆ°ç€ã—ãŸ
+			// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚Éƒf[ƒ^‚ª“’…‚µ‚½
 			recvHandler(workerHandle);
 		}
 
 		//CLOSE
 		if (events.lNetworkEvents & FD_CLOSE)
 		{
-			// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã®ã‚¯ãƒ­ãƒ¼ã‚ºã‚’æ¤œçŸ¥
+			// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚ÌƒNƒ[ƒY‚ğŒŸ’m
 			closeHandler(workerHandle);
 		}
 	}
@@ -170,7 +170,7 @@ void ConnectClient::func()
 		tmpEvent = INVALID_HANDLE_VALUE;
 	}
 
-	//whileæŠœã‘ãŸã‚‰ãƒ•ãƒ©ã‚°å€’ã™
+	//while”²‚¯‚½‚çƒtƒ‰ƒO“|‚·
 	std::lock_guard<std::mutex> lk(m_mutex);
 	_live = false;
 
@@ -179,7 +179,7 @@ void ConnectClient::func()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã‹ã‚‰ã®ãƒ‡ãƒ¼ã‚¿å—ä»˜æ™‚ã®ãƒãƒ³ãƒ‰ãƒ©
+// ƒNƒ‰ƒCƒAƒ“ƒg‚©‚ç‚Ìƒf[ƒ^ó•t‚Ìƒnƒ“ƒhƒ‰
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef _WIN64
 bool ConnectClient::recvHandler(HANDLE& hEvent)
@@ -187,59 +187,59 @@ bool ConnectClient::recvHandler(HANDLE& hEvent)
 bool ConnectClient::recvHandler()
 #endif
 {
-	write_log(2, "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ(%ld)ã‹ã‚‰ãƒ‡ãƒ¼ã‚¿ã‚’å—ä¿¡, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+	write_log(2, "ƒNƒ‰ƒCƒAƒ“ƒg(%ld)‚©‚çƒf[ƒ^‚ğóM, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 	char buf[1024];
 	int stSize = recv(_socket, buf, sizeof(buf), 0);
 	if (stSize <= 0) {
 		write_log(4, "recv error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
-		write_log(4, "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ(%ld)ã¨ã®æ¥ç¶šãŒåˆ‡ã‚Œã¾ã—ãŸ, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+		write_log(4, "ƒNƒ‰ƒCƒAƒ“ƒg(%ld)‚Æ‚ÌÚ‘±‚ªØ‚ê‚Ü‚µ‚½, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 #ifdef _WIN64
 		deleteConnection(hEvent);
 #else
-        close(_socket);
+		close(_socket);
 #endif
 		return true;
 	}
 
-	write_log(2, "å¤‰æ›å‰:[%s] ==> %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+	write_log(2, "•ÏŠ·‘O:[%s] ==> %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 
-	for (int i = 0; i < (int)stSize; i++) { // bufã®ä¸­ã®å°æ–‡å­—ã‚’å¤§æ–‡å­—ã«å¤‰æ›
+	for (int i = 0; i < (int)stSize; i++) { // buf‚Ì’†‚Ì¬•¶š‚ğ‘å•¶š‚É•ÏŠ·
 		if (isalpha(buf[i])) {
 			buf[i] = toupper(buf[i]);
 		}
 	}
 
-	// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã«è¿”ä¿¡
+	// ƒNƒ‰ƒCƒAƒ“ƒg‚É•ÔM
 	stSize = send(_socket, buf, strlen(buf) + 1, 0);
 
 	if (stSize != strlen(buf) + 1) {
 		write_log(4, "send error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
-		write_log(4, "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®æ¥ç¶šãŒåˆ‡ã‚Œã¾ã—ãŸ, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		write_log(4, "ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚ÌÚ‘±‚ªØ‚ê‚Ü‚µ‚½, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 #ifdef _WIN64
 		deleteConnection(hEvent);
 #else
-        close(_socket);
+		close(_socket);
 #endif
 		return true;
 	}
 
-	write_log(2, "å¤‰æ›å¾Œ:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+	write_log(2, "•ÏŠ·Œã:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 	return true;
 }
 
 #ifdef _WIN64
 ///////////////////////////////////////////////////////////////////////////////
-// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã®åˆ‡æ–­æ¤œçŸ¥æ™‚ã®ãƒãƒ³ãƒ‰ãƒ©
+// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚ÌØ’fŒŸ’m‚Ìƒnƒ“ƒhƒ‰
 ///////////////////////////////////////////////////////////////////////////////
 bool ConnectClient::closeHandler(HANDLE& hEvent)
 {
-	write_log(4, "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ(%d)ã¨ã®æ¥ç¶šãŒåˆ‡ã‚Œã¾ã—ãŸ, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+	write_log(4, "ƒNƒ‰ƒCƒAƒ“ƒg(%d)‚Æ‚ÌÚ‘±‚ªØ‚ê‚Ü‚µ‚½, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 	deleteConnection(hEvent);
 	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// æŒ‡å®šã•ã‚ŒãŸã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ³ãƒ‰ãƒ«ã¨ã‚½ã‚±ãƒƒãƒˆã‚¯ãƒ­ãƒ¼ã‚º
+// w’è‚³‚ê‚½ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‹‚Æƒ\ƒPƒbƒgƒNƒ[ƒY
 ///////////////////////////////////////////////////////////////////////////////
 void ConnectClient::deleteConnection(HANDLE& hEvent)
 {

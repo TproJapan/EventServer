@@ -1,0 +1,2 @@
+C:\Program Files\boost\boost_1_76_0\include\boost-1_76
+C:\Program Files\boost\boost_1_76_0\lib

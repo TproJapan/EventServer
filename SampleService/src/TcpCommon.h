@@ -18,36 +18,36 @@
 int GetServerStatus();
 
 #ifndef _WIN64
-#define PIPE_START "/tmp/fifo_start"//Startã«å®Œäº†å ±å‘Šã™ã‚‹åå‰ä»˜ããƒ‘ã‚¤ãƒ—
-#define PIPE_STOP "/tmp/fifo_stop"//Stopã«å®Œäº†å ±å‘Šã™ã‚‹åå‰ä»˜ããƒ‘ã‚¤ãƒ—
+#define PIPE_START "/tmp/fifo_start"//Start‚ÉŠ®—¹•ñ‚·‚é–¼‘O•t‚«ƒpƒCƒv
+#define PIPE_STOP "/tmp/fifo_stop"//Stop‚ÉŠ®—¹•ñ‚·‚é–¼‘O•t‚«ƒpƒCƒv
 #define REQUEST_PIPE "/tmp/request_pipe"
 #define PID_SERVER "/tmp/myServer.pid"
 #define PID_LOG "/tmp/myLog.pid"
 #define PID_OBSERVER "/tmp/Observer.pid"
 #define TMP_LOGFILE "/tmp/log"
 #define QUE_NAME "/mq_stop_observer"
-#define PROJ_HOME "/home/tateda/EventServer"
-#define CLIENT_MAX	800 //ãƒã‚·ãƒ¼ãƒ³ãƒªã‚½ãƒ¼ã‚¹ã«ä¾å­˜ã™ã‚‹æ•°
-#define SELECT_TIMER_SEC	30			// selectã®ã‚¿ã‚¤ãƒãƒ¼(ç§’)
-#define SELECT_TIMER_USEC	0			// selectã®ã‚¿ã‚¤ãƒãƒ¼(ãƒã‚¤ã‚¯ãƒ­ç§’)
+#define PROJ_HOME "/home/tateda/EventServer/SampleService/src"
+#define CLIENT_MAX	800 //ƒ}ƒV[ƒ“ƒŠƒ\[ƒX‚ÉˆË‘¶‚·‚é”
+#define SELECT_TIMER_SEC	30			// select‚Ìƒ^ƒCƒ}[(•b)
+#define SELECT_TIMER_USEC	0			// select‚Ìƒ^ƒCƒ}[(ƒ}ƒCƒNƒ•b)
 int SetServerStatus(int status);
 #if defined __TCPCOMMON__
-int server_status = 0; //ã‚µãƒ¼ãƒãƒ¼ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹(0:èµ·å‹•, 1:ã‚·ãƒ£ãƒƒãƒˆãƒ€ã‚¦ãƒ³)
+int server_status = 0; //ƒT[ƒo[ƒXƒe[ƒ^ƒX(0:‹N“®, 1:ƒVƒƒƒbƒgƒ_ƒEƒ“)
 std::mutex	server_status_Mutex;
 #else
 extern int server_status;
 extern std::mutex	server_status_Mutex;
 #endif
 #else
-#define CLIENT_MAX	400					// åŒæ™‚æ¥ç¶šå¯èƒ½ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆæ•°
-#define TIMEOUT_MSEC	3000			// ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆæ™‚é–“(ãƒŸãƒªç§’)
+#define CLIENT_MAX	400					// “¯Ú‘±‰Â”\ƒNƒ‰ƒCƒAƒ“ƒg”
+#define TIMEOUT_MSEC	3000			// ƒ^ƒCƒ€ƒAƒEƒgŠÔ(ƒ~ƒŠ•b)
 #if defined __MAIN_SRC__
-int server_status = 0;//ã‚µãƒ¼ãƒãƒ¼ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹(0:èµ·å‹•, 1:ã‚·ãƒ£ãƒƒãƒˆãƒ€ã‚¦ãƒ³)
+int server_status = 0;//ƒT[ƒo[ƒXƒe[ƒ^ƒX(0:‹N“®, 1:ƒVƒƒƒbƒgƒ_ƒEƒ“)
 std::mutex	server_status_Mutex;
 HANDLE socketMap_Mutex;
 const char* PIPE_NAME = "\\\\%s\\pipe\\EventServer";
 #else
-extern int server_status;//ã‚µãƒ¼ãƒãƒ¼ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹(0:èµ·å‹•, 1:ã‚·ãƒ£ãƒƒãƒˆãƒ€ã‚¦ãƒ³)
+extern int server_status;//ƒT[ƒo[ƒXƒe[ƒ^ƒX(0:‹N“®, 1:ƒVƒƒƒbƒgƒ_ƒEƒ“)
 extern std::mutex	server_status_Mutex;
 extern HANDLE socketMap_Mutex;
 extern const char* PIPE_NAME;

@@ -14,13 +14,13 @@ class TcpServer {
 public:
 #ifdef _WIN64
 	int isInisialized;
-	HANDLE hPipe;// åå‰ä»˜ããƒ‘ã‚¤ãƒ—
-	OVERLAPPED overlappedConnect;// OVARLAPPEDæ§‹é€ ä½“
+	HANDLE hPipe;// –¼‘O•t‚«ƒpƒCƒv
+	OVERLAPPED overlappedConnect;// OVARLAPPED\‘¢‘Ì
 	HANDLE eventConnect;
 	WORD wVersionRequested;
 	HANDLE hEvent;
 #endif
-	SOCKET srcSocket;// ã‚½ã‚±ãƒƒãƒˆ(listenç”¨)
+	SOCKET srcSocket;// ƒ\ƒPƒbƒg(listen—p)
 	boost::asio::io_service io_service;
 	thread_pool tp;
 	int nPortNo;
@@ -42,7 +42,7 @@ public:
 
 #ifdef _WIN64
 #if defined __MAIN_SRC__
-HANDLE TcpServerMainEnd = INVALID_HANDLE_VALUE;// Tcpserverã®çµ‚äº†ã‚’ã‚µãƒ¼ãƒ“ã‚¹ã«çŸ¥ã‚‰ã›ã‚‹ç‚ºã«ä½¿ç”¨ã™ã‚‹ã‚¤ãƒ™ãƒ³ãƒˆ
+HANDLE TcpServerMainEnd = INVALID_HANDLE_VALUE;// Tcpserver‚ÌI—¹‚ğƒT[ƒrƒX‚É’m‚ç‚¹‚éˆ×‚Ég—p‚·‚éƒCƒxƒ“ƒg
 #else
 extern HANDLE TcpServerMainEnd;
 #endif
