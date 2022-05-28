@@ -2,6 +2,12 @@
 Tcp Server which converts the chars from lower case to upper case, then return to the client.
 Using Boost Thread.
 
+# Boost Requirement
+
+Windows 1_76
+
+Linux 1_71
+
 # [Install(for Windows)]
 (1) Clone the rep
 
@@ -37,6 +43,7 @@ Using Boost Thread.
 (1) Clone the rep
 
 (2) Make
+
     Open the file "EventServer/SampleService/src/Boost_Path.txt"
 
     Override the "PROJ_HOME" in TcpCommon.h with your path.
@@ -65,7 +72,7 @@ Using Boost Thread.
 
     「T子文字のアルファベットを入力してください」
 
-　　-> Type just ".", then press enter key
+    Type just ".", then press enter key
   
 (2) Stop the "SampleServ" Service
 
@@ -91,7 +98,7 @@ Using Boost Thread.
 
     「T子文字のアルファベットを入力してください」
 
-　　-> Type just ".", then press enter key 
+    Type just ".", then press enter key 
 
 (2) Stop the Tcp Server
 
