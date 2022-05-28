@@ -31,6 +31,12 @@ int main()
             path[strlen(path) - 2] = '\0';
         }
 
+        if (strlen(path) >= 1
+            && path[strlen(path) - 1] == '\n')
+        {
+            path[strlen(path) - 1] = '\0';
+        }
+
         if(i== 0) {
             strcpy(includePath, path);
         }else if (i == 1) {
