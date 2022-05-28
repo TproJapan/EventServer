@@ -23,7 +23,7 @@ int Change_File(char* fileName,
         {
             newFileContent += "<AdditionalIncludeDirectories>";
             newFileContent += includePath;
-            //newFileContent += "</AdditionalIncludeDirectories>\n";
+            newFileContent += "</AdditionalIncludeDirectories>\n";
             continue;
         }
 
