@@ -2,6 +2,12 @@
 Tcp Server which converts the chars from lower case to upper case, then return to the client.
 Using Boost Thread.
 
+# Boost Requirement
+
+Windows 1_76
+
+Linux 1_71
+
 # [Install(for Windows)]
 (1) Clone the rep
 
@@ -21,13 +27,17 @@ Using Boost Thread.
 
     Launch the file "EventServer/SampleService/SampleService/SetBoostPath/x64/Debug/SetBoostPath.exe"
 
-(4) Build the SampleService Solution
+(4) Build the SampleService Project Only (Not SampleService Solution)
 
     Open the VS Solution file "EventServer/SampleService/SampleService/SampleService.sln", 
-    and change the "SERVICE_EXE_FILEPATH" in install.cpp and uninstall.cpp with your path.
-    Then, build the solution.
+    build SampleService project.
+    Find the path to SampleService.exe. The path will usually be "EventServer/SampleService/x64/Debug/SampleService.exe"
 
-(5) Install the "SampleServe" as a Windows Service
+(5) Build the rest of the Projects
+    Change the "SERVICE_EXE_FILEPATH" in install.cpp(in install Project) and uninstall.cpp(in uninstall Project) with the path to SampleService.exe in yours.
+    Then, build the SampleService solution.
+
+(6) Install the "SampleServe" as a Windows Service
 
     # cd EventServer/SampleService/x64/Debug
 
@@ -37,6 +47,7 @@ Using Boost Thread.
 (1) Clone the rep
 
 (2) Make
+
     Open the file "EventServer/SampleService/src/Boost_Path.txt"
 
     Override the "PROJ_HOME" in TcpCommon.h with your path.
@@ -65,7 +76,7 @@ Using Boost Thread.
 
     「T子文字のアルファベットを入力してください」
 
-　　-> Type just ".", then press enter key
+    Type just ".", then press enter key
   
 (2) Stop the "SampleServ" Service
 
@@ -91,7 +102,7 @@ Using Boost Thread.
 
     「T子文字のアルファベットを入力してください」
 
-　　-> Type just ".", then press enter key 
+    Type just ".", then press enter key 
 
 (2) Stop the Tcp Server
 
