@@ -34,6 +34,7 @@ Linux 1_71
     Find the path to SampleService.exe. The path will usually be "EventServer/SampleService/x64/Debug/SampleService.exe"
 
 (5) Build the rest of the Projects
+
     Change the "SERVICE_EXE_FILEPATH" in install.cpp(in install Project) and uninstall.cpp(in uninstall Project) with the path to SampleService.exe in yours.
     Then, build the SampleService solution.
 
