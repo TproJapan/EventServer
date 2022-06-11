@@ -97,8 +97,6 @@ Linux 1_71
 
     # ./TcpClient IPv4_Address 5000(any valid port num)
 
-(3)
-
 # [Stop(for Linux)]
 (1) Stop Client
 
