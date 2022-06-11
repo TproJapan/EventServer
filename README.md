@@ -27,14 +27,20 @@ Linux 1_71
 
     Launch the file "EventServer/SampleService/SampleService/SetBoostPath/x64/Debug/SetBoostPath.exe"
 
-(4) Build the SampleService Solution
+(4) Build the SampleService Project Only (Not SampleService Solution)
 
     Open the VS Solution file "EventServer/SampleService/SampleService/SampleService.sln", 
-    and change the "SERVICE_EXE_FILEPATH" in install.cpp and uninstall.cpp with your path.
-    Then, build the solution.
+    build SampleService project.
+    Get the full path to SampleService.exe. The path will usually be "<path_to_your_project_root>/EventServer/SampleService/x64/Debug/SampleService.exe"
 
-(5) Install the "SampleServe" as a Windows Service
+(5) Build the rest of the Projects
 
+    Override the "SERVICE_EXE_FILEPATH" in install.cpp(in install Project) and uninstall.cpp(in uninstall Project) with the full path you got in (4).
+    Then, build the SampleService solution.
+
+(6) Install the "SampleServe" as a Windows Service
+
+    Open CMD as Admin
     # cd EventServer/SampleService/x64/Debug
 
     # install.exe
@@ -107,3 +113,10 @@ Linux 1_71
     # ps aux(Get the PS ID for the Tcp Server)
 
     # ./Stop PS_ID
+
+# [Uninstall(for Windows)]
+
+    Open CMD as Admin
+    # cd EventServer/SampleService/x64/Debug
+
+    # uninstall.exe

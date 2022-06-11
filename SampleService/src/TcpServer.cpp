@@ -321,7 +321,7 @@ int TcpServer::Func() {
 		//int dstSocket = -1;		// クライアントとの通信ソケット
 
 		// Vectorのゴミ掃除
-		cleanupConnectClientVec(connectclient_vec); // konishi
+		cleanupConnectClientVec(connectclient_vec);
 
 		///////////////////////////////////////
 		// selectで監視するソケットの登録
@@ -565,7 +565,7 @@ int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 		}
 	}
 
-	write_log(2, "konishi *** deleteCount = %d ***, %s %d %s", deleteCount, __FILENAME__, __LINE__, __func__);
+	write_log(2, "deleteCount = %d ***, %s %d %s", deleteCount, __FILENAME__, __LINE__, __func__);
 	return deleteCount;
 }
 #endif

@@ -402,27 +402,27 @@ VOID StopService()
 
 	// 現在の状態をSCMに通知する
 	BOOL success = SendStatusToSCM(SERVICE_STOP_PENDING,
-		NO_ERROR, 0, 1, 30000);// konishi
+		NO_ERROR, 0, 1, 30000);
 
 	//WaitForSingleObject(TcpServerMainEnd,INFINITE);
 #if 1
 	TcpServerMainEnd = CreateEvent(0, TRUE, FALSE, 0);
 	if (!TcpServerMainEnd)
 	{
-		write_log(4, "konishi:CreateEvent error.  %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		write_log(4, "CreateEvent error.  %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
 	}
 
-	write_log(2, "konishi:CreateEvent normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	write_log(2, "CreateEvent normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	//Tcpサーバ停止関数呼び出し
 	write_log(2, "Tcpサーバ停止を開始しました. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	if (tcpServer != NULL) tcpServer->StopTcpServer();
 
-	DWORD dwRet = WaitForSingleObject(TcpServerMainEnd, 20000); // konishi
+	DWORD dwRet = WaitForSingleObject(TcpServerMainEnd, 20000);
 	string strRet = "";
 	switch (dwRet) {
 	case WAIT_ABANDONED:
@@ -442,7 +442,7 @@ VOID StopService()
 		break;
 	}
 
-	write_log(2, "konishi: strRet = %s. %s %d %s\n", strRet.c_str(), __FILENAME__, __LINE__, __func__);
+	write_log(2, "strRet = %s. %s %d %s\n", strRet.c_str(), __FILENAME__, __LINE__, __func__);
 
 	if (dwRet == WAIT_FAILED) {
 		write_log(4, "WaitForSingleObject error.code=%d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
@@ -456,7 +456,7 @@ VOID StopService()
 	if (TcpServerMainEnd)
 	{
 		CloseHandle(TcpServerMainEnd);
-		write_log(2, "konishi:CloseHandle ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		write_log(2, "CloseHandle ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	}
 #endif
 
@@ -497,8 +497,8 @@ DWORD ServiceThread(LPDWORD param)
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
 	try {
-		//tcpServer = new TcpServer();// konishi
-		tcpServer = new TcpServer(5000);// konishi
+		//tcpServer = new TcpServer();
+		tcpServer = new TcpServer(5000);
 	}
 	catch (int e) {
 		return -1;

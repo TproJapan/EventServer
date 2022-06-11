@@ -117,7 +117,7 @@ int main(int argc, char* argv[])
 
     // ソケットをクローズ
 #ifdef _WIN64
-    closesocket(dstSocket); // konishi
+    closesocket(dstSocket);
 #else
     close(dstSocket);
 #endif
