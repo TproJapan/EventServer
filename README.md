@@ -40,6 +40,7 @@ Linux 1_71
 
 (6) Install the "SampleServe" as a Windows Service
 
+    Open CMD as Admin
     # cd EventServer/SampleService/x64/Debug
 
     # install.exe
@@ -112,3 +113,10 @@ Linux 1_71
     # ps aux(Get the PS ID for the Tcp Server)
 
     # ./Stop PS_ID
+
+# [Uninstall(for Windows)]
+
+    Open CMD as Admin
+    # cd EventServer/SampleService/x64/Debug
+
+    # uninstall.exe
