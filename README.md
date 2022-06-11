@@ -31,11 +31,11 @@ Linux 1_71
 
     Open the VS Solution file "EventServer/SampleService/SampleService/SampleService.sln", 
     build SampleService project.
-    Find the path to SampleService.exe. The path will usually be "EventServer/SampleService/x64/Debug/SampleService.exe"
+    Get the full path to SampleService.exe. The path will usually be "<path_to_your_project_root>/EventServer/SampleService/x64/Debug/SampleService.exe"
 
 (5) Build the rest of the Projects
 
-    Change the "SERVICE_EXE_FILEPATH" in install.cpp(in install Project) and uninstall.cpp(in uninstall Project) with the path to SampleService.exe in yours.
+    Override the "SERVICE_EXE_FILEPATH" in install.cpp(in install Project) and uninstall.cpp(in uninstall Project) with the full path you got in (4).
     Then, build the SampleService solution.
 
 (6) Install the "SampleServe" as a Windows Service
