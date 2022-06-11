@@ -31,6 +31,7 @@ int closeStartPipe();
 int main(int argc, char* argv[])
 {
 	//引数チェック
+	// GetServByName
 	if ( argc == 1 || argc > 3 ) {
 		perror("Start Option error\n");
 		printf("E.G: # ./Start 5000 or # ./Start -f 5000\n");
