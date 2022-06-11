@@ -23,7 +23,7 @@ bool write_log(int level, const char* message, ...)
     src::severity_logger< severity_level > lg;
 
     //BOOST_LOG_SEV(lg, (boost::log::v2s_mt_nt6::trivial::severity_level)level) << allocBuf;
-    //BOOST_LOG_SEV(lg, level) << allocBuf;	// konishi
+    //BOOST_LOG_SEV(lg, level) << allocBuf;
     //BOOST_LOG_SEV(lg, (boost::log::v2s_mt_posix::trivial::severity_level)level) << allocBuf;
 #ifdef _WIN64
     BOOST_LOG_SEV(lg, (boost::log::v2s_mt_nt6::trivial::severity_level)level) << allocBuf;
@@ -69,10 +69,10 @@ void init(int level, const char* log_dir, const char* log_filename)
             )
     );
 
-    //logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::v2s_mt_nt6::trivial::severity_level)level);//konishi
-    //logging::core::get()->set_filter(logging::trivial::severity >= level); // konishi
-    //logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::v2s_mt_posix::trivial::severity_level)level); // konishi
-    logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::trivial::severity_level)level); // konishi
+    //logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::v2s_mt_nt6::trivial::severity_level)level);
+    //logging::core::get()->set_filter(logging::trivial::severity >= level);
+    //logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::v2s_mt_posix::trivial::severity_level)level);
+    logging::core::get()->set_filter(logging::trivial::severity >= (boost::log::trivial::severity_level)level);
 
 }
 

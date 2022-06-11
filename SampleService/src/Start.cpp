@@ -76,7 +76,7 @@ int main(int argc, char* argv[])
 	else if (pid == 0) //子プロセスには0が返る
 	{
 		//ToDo:renameat関数使ってリネームできそう
-		printf("TcpServer_path = [%s]\n", TcpServer_path);//konishi
+		printf("TcpServer_path = [%s]\n", TcpServer_path);
 		nRet = execv(TcpServer_path, str);
         if ( nRet == -1 ) 
 		{
