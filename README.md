@@ -60,9 +60,7 @@ Linux 1_71
 
 (2) Make
 
-    Open the file "EventServer/SampleService/src/Boost_Path.txt"
-
-    Override the "PROJ_HOME" in TcpCommon.h with your path.
+    Override the "PROJ_HOME" in TcpCommon.h with your path to the makefile.
 
     Make the project
 
