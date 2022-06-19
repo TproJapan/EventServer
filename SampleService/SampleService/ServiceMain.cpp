@@ -6,7 +6,8 @@
 #include "../src/BoostLog.h"
 #include "../src/TcpServer.h"
 #include <Windows.h>
-
+#include <stdio.h>
+#include <WinSock2.h>
 using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -496,11 +497,34 @@ DWORD ServiceThread(LPDWORD param)
 {
 	write_log(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
-	try {
-		//tcpServer = new TcpServer();
-		tcpServer = new TcpServer(5000);
+	const char* name = "eventserver";
+	const char* protocol = "tcp";
+
+	WSADATA	WsaData;
+	WORD wVersionRequested;
+	wVersionRequested = MAKEWORD(2, 0);
+	if (WSAStartup(wVersionRequested, &WsaData) != 0) {
+		write_log(4, "WSAStartup() error. code=%d %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		return -1;
 	}
-	catch (int e) {
+
+	struct servent* pServent = NULL;
+	pServent = getservbyname(name, protocol);
+	int port = 5000;//Default value
+	if (pServent == NULL) 
+	{
+		write_log(4, "getservbyname error, uses 5000 for Port %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	}else {
+		port = ntohs(pServent->s_port);
+		write_log(2, "Uses %d for Port. %s %d %s\n", port, __FILENAME__, __LINE__, __func__);
+	}
+
+	try {
+		tcpServer = new TcpServer(port);
+	}
+	catch (int e) 
+	{
+		write_log(4, "tcpServer create error. code=%d %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return -1;
 	}
 
@@ -511,11 +535,8 @@ DWORD ServiceThread(LPDWORD param)
 		write_log(4, "Tcpserver() ended with error %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
 	}
 
-
-	write_log(4, "Before Destructor run %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
 	delete tcpServer;
-	write_log(4, "After Destructor run %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
-
+	
 	write_log(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 	return 0;
 }

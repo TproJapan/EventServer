@@ -45,6 +45,16 @@ Linux 1_71
 
     # install.exe
 
+(7) Add port number for this Application in services file
+
+    Open services file. this file usually be in "C:\Windows\System32\drivers\etc", and add the new line.
+
+    "eventserver      <port_number>/tcp"
+
+    <port_number> must be the one which is not used in your system yet.(recommend over 5000), and save the file.
+
+    If not no port number specified or cannot recognize, then uses default number 5000.
+
 # [Install(for Linux)]
 (1) Clone the rep
 
