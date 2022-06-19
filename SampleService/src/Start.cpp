@@ -17,6 +17,7 @@
 #include <string.h>
 #include <arpa/inet.h>
 #include "TcpCommon.h"
+#include <netdb.h>
 using namespace std;
 
 int fd_start = -1;//立ち上がり完了報告用fd;
@@ -30,13 +31,23 @@ int closeStartPipe();
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
-	//引数チェック
-	// GetServByName
-	if ( argc == 1 || argc > 3 ) {
-		perror("Start Option error\n");
-		printf("E.G: # ./Start 5000 or # ./Start -f 5000\n");
-		return -1;
-	} 
+	const char* name = "eventserver";
+	const char* protocol = "tcp";
+
+	struct servent* pServent = NULL;
+	pServent = getservbyname(name, protocol);
+	int port = 5000;//Default value
+	char port_buff[16];
+
+	if (pServent == NULL) 
+	{
+		std::sprintf(port_buff, "%d", port);
+		printf("getservbyname error, uses %s for Port.\n", port_buff);
+	}else {
+		port = ntohs(pServent->s_port);
+		std::sprintf(port_buff, "%d", port);
+		printf("Uses %s for Port.\n", port_buff);
+	}
 
 	// 入力パイプの作成
 	unlink(PIPE_START);
@@ -56,9 +67,9 @@ int main(int argc, char* argv[])
 	//StartコマンドプロセスID取得
 	pid_t r_pid = getpid();
 	char pid_buff[16];
-    char port_buff[16];
+    //char port_buff[16];
 
-	strcpy(port_buff, argv[1]);
+	//strcpy(port_buff, argv[1]);
     sprintf(pid_buff, "%d", r_pid);//文字列に変換
 
 	char TcpServer_path[256];

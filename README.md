@@ -68,6 +68,15 @@ Linux 1_71
 
     # make
 
+(3) Add port number for this Application in services file
+
+    Open services file. this file usually be in "/etc", and add the new line.
+
+    "eventserver      <port_number>/tcp"
+
+    <port_number> must be the one which is not used in your system yet.(recommend over 5000), and save the file.
+
+    If not no port number specified or cannot recognize, then uses default number 5000.
 
 # [Launch(for Windows)]
 (1) Start the "SampleServ" Service
@@ -78,7 +87,7 @@ Linux 1_71
 
     # ipconfig(Get Local IPv4 address)
 
-    # TcpClient.exe IPv4_Address 5000(any valid port num)
+    # TcpClient.exe IPv4_Address Port_Number
 
 # [Stop(for Windows)]
 
@@ -95,7 +104,7 @@ Linux 1_71
 
     # cd EventServer/SampleService/src
 
-    # ./Start 5000(any valid port num)
+    # ./Start
 
 (2) Start the TCP Client
 
@@ -103,7 +112,7 @@ Linux 1_71
 
     # ifconfig(Get Local IPv4 address)
 
-    # ./TcpClient IPv4_Address 5000(any valid port num)
+    # ./TcpClient IPv4_Address Port_Number
 
 # [Stop(for Linux)]
 (1) Stop Client
