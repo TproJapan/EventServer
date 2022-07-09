@@ -26,7 +26,7 @@ int GetServerStatus();
 #define PID_OBSERVER "/tmp/Observer.pid"
 #define TMP_LOGFILE "/tmp/log"
 #define QUE_NAME "/mq_stop_observer"
-#define PROJ_HOME "/home/tateda/EventServer/SampleService/src"
+// #define PROJ_HOME "/home/tateda/EventServer/SampleService/src"
 #define CLIENT_MAX	800 //マシーンリソースに依存する数
 #define SELECT_TIMER_SEC	30			// selectのタイマー(秒)
 #define SELECT_TIMER_USEC	0			// selectのタイマー(マイクロ秒)

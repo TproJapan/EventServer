@@ -60,10 +60,6 @@ Linux 1_71
 
 (2) Make
 
-    Override the "PROJ_HOME" in TcpCommon.h with your path to the makefile.
-
-    Make the project
-
     # cd EventServer/SampleService/src
 
     # make
@@ -85,7 +81,8 @@ Linux 1_71
 
     # cd EventServer/SampleService/x64/Debug
 
-    # ipconfig(Get Local IPv4 address)
+    Get Local IPv4 address
+    # ipconfig
 
     # TcpClient.exe IPv4_Address Port_Number
 
@@ -105,12 +102,14 @@ Linux 1_71
     # cd EventServer/SampleService/src
 
     # ./Start
+    pid = ***
 
 (2) Start the TCP Client
 
     # cd EventServer/SampleService/src
 
-    # ifconfig(Get Local IPv4 address)
+    Get Local IPv4 address
+    # ifconfig
 
     # ./TcpClient IPv4_Address Port_Number
 
@@ -125,9 +124,8 @@ Linux 1_71
 
     # cd EventServer/SampleService/src
 
-    # ps aux(Get the PS ID for the Tcp Server)
-
-    # ./Stop PS_ID
+    # ./Stop <ProcessID>
+    <ProcessID> is shown when Started Tcp Server.
 
 # [Uninstall(for Windows)]
 

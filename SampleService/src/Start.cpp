@@ -72,8 +72,12 @@ int main(int argc, char* argv[])
 	//strcpy(port_buff, argv[1]);
     sprintf(pid_buff, "%d", r_pid);//文字列に変換
 
-	char TcpServer_path[256];
-	sprintf(TcpServer_path, "%s%s",PROJ_HOME, "/ServerMain");
+	char CurrentPath[256];
+	getcwd(CurrentPath, 256);
+
+	char TcpServerPath[256];
+	sprintf(TcpServerPath, "%s%s",CurrentPath, "/../build/ServerMain");
+
 	char* const str[] = {(char*)"myServer", port_buff, pid_buff, NULL};
 	pid_t pid = 0;
 	
@@ -87,8 +91,8 @@ int main(int argc, char* argv[])
 	else if (pid == 0) //子プロセスには0が返る
 	{
 		//ToDo:renameat関数使ってリネームできそう
-		printf("TcpServer_path = [%s]\n", TcpServer_path);
-		nRet = execv(TcpServer_path, str);
+		printf("TcpServerPath = [%s]\n", TcpServerPath);
+		nRet = execv(TcpServerPath, str);
         if ( nRet == -1 ) 
 		{
 			printf("execv has failed in Start.cpp. errno=%d\n", errno);
