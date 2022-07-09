@@ -26,6 +26,7 @@ char buff[256];
 int nRet;
 
 int closeStartPipe();
+void eraseTail(char *str, int n);
 ///////////////////////////////////////////////////////////////////////////////
 // main
 ///////////////////////////////////////////////////////////////////////////////
@@ -76,7 +77,13 @@ int main(int argc, char* argv[])
 	getcwd(CurrentPath, 256);
 
 	char TcpServerPath[256];
-	sprintf(TcpServerPath, "%s%s",CurrentPath, "/../build/ServerMain");
+	if(argv[0][0] == '/')//Absolute Path
+	{
+		sprintf(TcpServerPath, "%s%s",CurrentPath, "/../build/ServerMain");
+	}else{//Relative Path
+		eraseTail(argv[0], 6);
+		sprintf(TcpServerPath, "%s%s%s%s",CurrentPath, "/", argv[0], "/../build/ServerMain");
+	}
 
 	char* const str[] = {(char*)"myServer", port_buff, pid_buff, NULL};
 	pid_t pid = 0;
@@ -132,4 +139,16 @@ int closeStartPipe(){
     unlink(PIPE_START);
 	return(0);
 };
+
+void eraseTail(char *str, int n)
+{
+	const int len = strlen(str);
+	if (n >= len) 
+	{
+		*str = '\0';
+	}
+	else {
+		str[len - n] = '\0';
+	}
+}
 #endif
