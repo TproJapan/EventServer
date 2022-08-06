@@ -73,17 +73,21 @@ int main(int argc, char* argv[])
 	//strcpy(port_buff, argv[1]);
     sprintf(pid_buff, "%d", r_pid);//文字列に変換
 
-	char CurrentPath[256];
-	getcwd(CurrentPath, 256);
+	// getcwd(CurrentPath, 256);
 
-	char TcpServerPath[256];
-	if(argv[0][0] == '/')//Absolute Path
-	{
-		sprintf(TcpServerPath, "%s%s",CurrentPath, "/../build/ServerMain");
-	}else{//Relative Path
-		eraseTail(argv[0], 6);
-		sprintf(TcpServerPath, "%s%s%s%s",CurrentPath, "/", argv[0], "/../build/ServerMain");
-	}
+	char TcpServerPath[256];//デーモン実行するサーバープログラムのパス
+	char SymbolicLink[256];//実行中のプロセスのシンボリックリンク
+	char AbsolutePath[256];//実行中のプログラム絶対パス
+	memset(TcpServerPath, 0, sizeof(TcpServerPath));
+	memset(SymbolicLink, 0, sizeof(SymbolicLink));
+	memset(AbsolutePath, 0, sizeof(AbsolutePath));
+
+	snprintf(SymbolicLink, sizeof(SymbolicLink)-1, "/proc/%d/exe", r_pid);
+	readlink(SymbolicLink, AbsolutePath, sizeof(AbsolutePath));
+
+	eraseTail(AbsolutePath, sizeof("Start"));
+	// printf("AbsolutePath = [%s]\n", AbsolutePath);
+	sprintf(TcpServerPath, "%s%s",AbsolutePath, "/../build/ServerMain");
 
 	char* const str[] = {(char*)"myServer", port_buff, pid_buff, NULL};
 	pid_t pid = 0;
@@ -152,3 +156,9 @@ void eraseTail(char *str, int n)
 	}
 }
 #endif
+//スネークではなくキャメルケース
+//頭は小文字
+//定数は全部大文字
+//動詞目的語
+//意味を持った変数名
+//マジックナンバーはやめて定数名をつける
