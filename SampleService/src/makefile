@@ -7,15 +7,25 @@ SOURCES1   = $(SRCDIR)/ServerMain.cpp \
 				$(SRCDIR)/BoostLog.cpp \
 				$(SRCDIR)/TcpCommon.cpp \
 				$(SRCDIR)/ConnectClient.cpp
-				
+SOURCES2   = $(SRCDIR)/TcpClient.cpp
+SOURCES3   = $(SRCDIR)/Stop.cpp
+SOURCES4   = $(SRCDIR)/Start.cpp \
+				$(SRCDIR)/TcpCommon.cpp \
+				$(SRCDIR)/BoostLog.cpp
 OBJECTS1   = $(addprefix $(OBJDIR)/, $(notdir $(SOURCES1:.cpp=.o)))
+OBJECTS2   = $(addprefix $(OBJDIR)/, $(notdir $(SOURCES2:.cpp=.o)))
+OBJECTS3   = $(addprefix $(OBJDIR)/, $(notdir $(SOURCES3:.cpp=.o)))
+OBJECTS4   = $(addprefix $(OBJDIR)/, $(notdir $(SOURCES4:.cpp=.o)))
 OBJDIR    = $(BUILDDIR)
 OBJECTS   = $(addprefix $(OBJDIR)/, $(notdir $(SOURCES:.cpp=.o)))
 #TARGET1 =ServerMain
 TARGET1 = $(BUILDDIR)/ServerMain
-TARGET2 = TcpClient
-TARGET3 = Stop
-TARGET4 = Start
+#TARGET2 = TcpClient
+TARGET2 = $(BUILDDIR)/TcpClient
+# TARGET3 = Stop
+TARGET3 = $(BUILDDIR)/Stop
+# TARGET4 = Start
+TARGET4 = $(BUILDDIR)/Start
 #CCFLAG = -std=c++11 -g -DBOOST_LOG_DYN_LINK
 CCFLAG = -std=c++11 -g -DBOOST_LOG_DYN_LINK -MMD -MP -Wall#(-Wallは取ると警告レベルが下がる)
 LDFLAGS =  -lpthread -lboost_log -lboost_thread -lboost_system
@@ -29,12 +39,18 @@ $(TARGET1) : $(OBJECTS1)
 $(OBJDIR)/%.o: $(SRCDIR)/%.cpp
 	mkdir -p $(OBJDIR)
 	$(CC) $(CCFLAG) $(INCLUDE) -o $@ -c $<
-$(TARGET2) : TcpClient.o 
-	$(CC) -o $(TARGET2) TcpClient.o -lrt
-$(TARGET3) : Stop.o 
-	$(CC) -o $(TARGET3) Stop.o -lrt
-$(TARGET4) : Start.o TcpCommon.o BoostLog.o
-	$(CC) -o $(TARGET4) Start.o TcpCommon.o BoostLog.o -lpthread -lboost_log -lboost_thread -lboost_system
+# $(TARGET2) : TcpClient.o 
+# 	$(CC) -o $(TARGET2) TcpClient.o -lrt
+$(TARGET2) : $(OBJECTS2) 
+	$(CC) -o $@  $^ $(LDFLAGS)
+# $(TARGET3) : Stop.o 
+# 	$(CC) -o $(TARGET3) Stop.o -lrt
+$(TARGET3) : $(OBJECTS3) 
+	$(CC) -o $@  $^ $(LDFLAGS)
+# $(TARGET4) : Start.o TcpCommon.o BoostLog.o
+# 	$(CC) -o $(TARGET4) Start.o TcpCommon.o BoostLog.o -lpthread -lboost_log -lboost_thread -lboost_system
+$(TARGET4) : $(OBJECTS4)
+	$(CC) -o $@  $^ $(LDFLAGS)
 ServerMain.o : ServerMain.cpp BoostLog.h thread_pool.h TcpCommon.h ConnectClient.h
 	$(CC) -c $(CCFLAG) ServerMain.cpp
 TcpServer.o : TcpServer.cpp
