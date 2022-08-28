@@ -28,7 +28,13 @@ private:
 	// クライアントとの通信ソケットの切断検知時のハンドラ
 	bool closeHandler(HANDLE& hEvent);
 
+	// CloseHandleのラッパー
+	bool closeAndInvalidateHandle(HANDLE& hEvent);
+
 	// 指定されたイベントハンドルとソケットクローズ、mapからの削除
 	void deleteConnection(HANDLE& hEvent);
 #endif
+	// closeまたはclosesocketのラッパー
+	bool closeAndInvalidateSocket(SOCKET& socket);
+
 };

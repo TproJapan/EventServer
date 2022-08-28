@@ -18,11 +18,14 @@
 ConnectClient::~ConnectClient()
 {
 	write_log(2, "destructor started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);//konishi
+	if (_socket != INVALID_SOCKET) 
+	{
 #ifdef _WIN64
-	if (_socket != INVALID_SOCKET) closesocket(_socket);
+	closesocket(_socket);
 #else
-	if (_socket != INVALID_SOCKET) close(_socket);
+	close(_socket);
 #endif
+	}
 }
 
 ConnectClient::ConnectClient(SOCKET dstSocket)
@@ -162,15 +165,17 @@ void ConnectClient::func()
 		}
 	}
 
-	if (_socket != INVALID_SOCKET) {
-		closesocket(_socket);
-		_socket = INVALID_SOCKET;
-	}
+	// if (_socket != INVALID_SOCKET) {
+	// 	closesocket(_socket);
+	// 	_socket = INVALID_SOCKET;
+	// }
+	closeAndInvalidateSocket(_socket);
 
-	if (tmpEvent != INVALID_HANDLE_VALUE) {
-		CloseHandle(tmpEvent);
-		tmpEvent = INVALID_HANDLE_VALUE;
-	}
+	// if (tmpEvent != INVALID_HANDLE_VALUE) {
+	// 	CloseHandle(tmpEvent);
+	// 	tmpEvent = INVALID_HANDLE_VALUE;
+	// }
+	closeAndInvalidateHandle(tmpEvent);
 
 	//while抜けたらフラグ倒す
 	std::lock_guard<std::mutex> lk(m_mutex);
@@ -198,8 +203,9 @@ bool ConnectClient::recvHandler()
 #ifdef _WIN64
 		deleteConnection(hEvent);
 #else
-		close(_socket);
-		_socket = INVALID_SOCKET;// ★★★konishi
+		// close(_socket);
+		// _socket = INVALID_SOCKET;// ★★★konishi
+		closeAndInvalidateSocket(_socket);
 #endif
 		return true;
 	}
@@ -221,8 +227,9 @@ bool ConnectClient::recvHandler()
 #ifdef _WIN64
 		deleteConnection(hEvent);
 #else
-		close(_socket);
-		_socket = INVALID_SOCKET;// ★★★konishi
+		// close(_socket);
+		// _socket = INVALID_SOCKET;// ★★★konishi
+		closeAndInvalidateSocket(_socket);
 #endif
 		return true;
 	}
@@ -243,20 +250,51 @@ bool ConnectClient::closeHandler(HANDLE& hEvent)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// 指定されたイベントハンドルとソケットクローズ
+// CloseHandleのラッパー
 ///////////////////////////////////////////////////////////////////////////////
-void ConnectClient::deleteConnection(HANDLE& hEvent)
+bool ConnectClient::closeAndInvalidateHandle(HANDLE& hEvent)
 {
-	if (_socket != INVALID_SOCKET) {
-		closesocket(_socket);
-		_socket = INVALID_SOCKET;
-	}
-
 	if (hEvent != INVALID_HANDLE_VALUE) {
 		CloseHandle(hEvent);
 		hEvent = INVALID_HANDLE_VALUE;
 	}
 
+	return true;
+}
+
+///////////////////////////////////////////////////////////////////////////////
+// 指定されたイベントハンドルとソケットクローズ
+///////////////////////////////////////////////////////////////////////////////
+void ConnectClient::deleteConnection(HANDLE& hEvent)
+{
+	// if (_socket != INVALID_SOCKET) {
+	// 	closesocket(_socket);
+	// 	_socket = INVALID_SOCKET;
+		closeAndInvalidateSocket(_socket);
+	// }
+
+	// if (hEvent != INVALID_HANDLE_VALUE) {
+	// 	CloseHandle(hEvent);
+	// 	hEvent = INVALID_HANDLE_VALUE;
+	// }
+	closeAndInvalidateHandle(hEvent);
+
 	return;
 }
+
 #endif
+///////////////////////////////////////////////////////////////////////////////
+// closeのラッパー
+///////////////////////////////////////////////////////////////////////////////
+bool ConnectClient::closeAndInvalidateSocket(SOCKET& socket)
+{
+	if (_socket != INVALID_SOCKET) {
+#ifdef _WIN64
+		closesocket(socket);
+#else
+		close(socket);
+#endif
+		socket = INVALID_SOCKET;
+	}
+	return true;
+}
