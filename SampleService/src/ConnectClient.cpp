@@ -1,4 +1,4 @@
-#include "BoostLog.h"
+ï»¿#include "BoostLog.h"
 #include "TcpCommon.h"
 #ifndef _WIN64
 #include "ConnectClient.h"
@@ -17,6 +17,7 @@
 
 ConnectClient::~ConnectClient()
 {
+	write_log(2, "destructor started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);//konishi
 #ifdef _WIN64
 	if (_socket != INVALID_SOCKET) closesocket(_socket);
 #else
@@ -26,13 +27,14 @@ ConnectClient::~ConnectClient()
 
 ConnectClient::ConnectClient(SOCKET dstSocket)
 {
+	write_log(2, "constructor started. dstSocket=%d, %s %d %s\n", dstSocket, __FILENAME__, __LINE__, __func__);//konishi
 	_socket = dstSocket;
 	_live = true;
 }
 
 
 ///////////////////////////////////////////////////////////////////////////////
-//ƒnƒ“ƒhƒ‰§Œä
+//ãƒãƒ³ãƒ‰ãƒ©åˆ¶å¾¡
 ///////////////////////////////////////////////////////////////////////////////
 void ConnectClient::func()
 {
@@ -40,26 +42,26 @@ void ConnectClient::func()
 	write_log(2, "func started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 
 	while (1) {
-		//I—¹Šm”F
+		//çµ‚äº†ç¢ºèª
 		if (GetServerStatus() == 1) {
-			write_log(2, "Thread:%s‚ğI—¹‚µ‚Ü‚·, %s %d %s\n", std::this_thread::get_id(), __FILENAME__, __LINE__, __func__);
+			write_log(2, "Thread:%sã‚’çµ‚äº†ã—ã¾ã™, %s %d %s\n", std::this_thread::get_id(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		///////////////////////////////////
-		// ’ÊM
+		// é€šä¿¡
 		///////////////////////////////////
-		write_log(2, "client(%d)ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊM‚ğŠJn‚µ‚Ü‚·, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+		write_log(2, "client(%d)ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚’é–‹å§‹ã—ã¾ã™, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 		size_t stSize;
 		char buf[1024];
 
-		// ƒ^ƒCƒ€ƒAƒEƒg‚Ìİ’è
+		// ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆã®è¨­å®š
 		struct timeval  tval;
-		tval.tv_sec = SELECT_TIMER_SEC;	// time_t  •b
-		tval.tv_usec = SELECT_TIMER_USEC;	// suseconds_t  ƒ}ƒCƒNƒ•b
+		tval.tv_sec = SELECT_TIMER_SEC;	// time_t  ç§’
+		tval.tv_usec = SELECT_TIMER_USEC;	// suseconds_t  ãƒã‚¤ã‚¯ãƒ­ç§’
 
-		fd_set  readfds;//ƒrƒbƒgƒtƒ‰ƒOŠÇ—•Ï”
-		FD_ZERO(&readfds);//‰Šú‰»
+		fd_set  readfds;//ãƒ“ãƒƒãƒˆãƒ•ãƒ©ã‚°ç®¡ç†å¤‰æ•°
+		FD_ZERO(&readfds);//åˆæœŸåŒ–
 
 		FD_SET(_socket, &readfds);
 
@@ -70,52 +72,52 @@ void ConnectClient::func()
 			&tval);
 
 		if (nRet == -1) {
-			if (errno == EINTR) {//ƒVƒOƒiƒ‹Š„‚è‚İ‚ÍœŠO
+			if (errno == EINTR) {//ã‚·ã‚°ãƒŠãƒ«å‰²ã‚Šè¾¼ã¿ã¯é™¤å¤–
 				continue;
 			}
 			else {
-				// select‚ªˆÙíI—¹
-				write_log(4, "select error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				// selectãŒç•°å¸¸çµ‚äº†
+				write_log(4, "select error. errno=%d, %s %d %s\n", errno, __FILENAME__, __LINE__, __func__);// konishi
 				break;
 			}
 		}
 		else if (nRet == 0) {
-			write_log(2, "workerƒXƒŒƒbƒh‚Åƒ^ƒCƒ€ƒAƒEƒg”­¶, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			write_log(2, "workerã‚¹ãƒ¬ãƒƒãƒ‰ã§ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆç™ºç”Ÿ, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
-		// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚Éƒf[ƒ^‚ª“’…‚µ‚½
+		// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã«ãƒ‡ãƒ¼ã‚¿ãŒåˆ°ç€ã—ãŸ
 		recvHandler();
 	}
-	//while”²‚¯‚½‚çƒtƒ‰ƒO“|‚·
+	//whileæŠœã‘ãŸã‚‰ãƒ•ãƒ©ã‚°å€’ã™
 	std::lock_guard<std::mutex> lk(m_mutex);
 	_live = false;
 #else
 	HANDLE tmpEvent = WSACreateEvent();
 
-	//socket‚ÆƒCƒxƒ“ƒg•Ï”‚ğA‚Ç‚ÌŠÏ“_‚ÌƒCƒxƒ“ƒg‚Å”½‰‚³‚¹‚é‚©‚ğ•R‚Ã‚¯
+	//socketã¨ã‚¤ãƒ™ãƒ³ãƒˆå¤‰æ•°ã‚’ã€ã©ã®è¦³ç‚¹ã®ã‚¤ãƒ™ãƒ³ãƒˆã§åå¿œã•ã›ã‚‹ã‹ã‚’ç´ã¥ã‘
 	int nRet = WSAEventSelect(_socket, tmpEvent, FD_READ | FD_CLOSE);
 	if (nRet == SOCKET_ERROR) {
 		write_log(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return;
 	}
 
-	//ƒCƒxƒ“ƒg‚ğ”z—ñ‚ÅŠÇ—
+	//ã‚¤ãƒ™ãƒ³ãƒˆã‚’é…åˆ—ã§ç®¡ç†
 	const int workierEventNum = 1;
 	HANDLE workerEventList[workierEventNum];
 	workerEventList[0] = tmpEvent;
 
 	while (1) {
-		//ƒT[ƒo[ƒXƒe[ƒ^ƒXƒ`ƒFƒbƒN
+		//ã‚µãƒ¼ãƒãƒ¼ã‚¹ãƒ†ãƒ¼ã‚¿ã‚¹ãƒã‚§ãƒƒã‚¯
 		if (GetServerStatus() == 1) break;
 
-		//‹­§I—¹—p‚Ìinterruption_point‚ğ’£‚é
+		//å¼·åˆ¶çµ‚äº†ç”¨ã®interruption_pointã‚’å¼µã‚‹
 		boost::this_thread::interruption_point();
 
-		write_log(2, "‘‚«‚İ‚ğ‘Ò‚Á‚Ä‚¢‚Ü‚·.,%s %d %s\n", __FILENAME__, __LINE__, __func__);
+		write_log(2, "æ›¸ãè¾¼ã¿ã‚’å¾…ã£ã¦ã„ã¾ã™.,%s %d %s\n", __FILENAME__, __LINE__, __func__);
 		DWORD worker_dwTimeout = TIMEOUT_MSEC;
 
-		//ƒCƒxƒ“ƒg‘½d‘Ò‚¿
+		//ã‚¤ãƒ™ãƒ³ãƒˆå¤šé‡å¾…ã¡
 		int worker_nRet = WSAWaitForMultipleEvents(workierEventNum,
 			workerEventList,
 			FALSE,
@@ -128,16 +130,16 @@ void ConnectClient::func()
 		}
 
 		if (worker_nRet == WSA_WAIT_TIMEOUT) {
-			write_log(2, "ƒ^ƒCƒ€ƒAƒEƒg”­¶‚Å‚·!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			write_log(2, "ã‚¿ã‚¤ãƒ ã‚¢ã‚¦ãƒˆç™ºç”Ÿã§ã™!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
 		write_log(2, "WSAWaitForMultipleEvents nRet=%ld, %s %d %s\n", worker_nRet, __FILENAME__, __LINE__, __func__);
 
-		// ƒCƒxƒ“ƒg‚ğŒŸ’m‚µ‚½HANDLE
+		// ã‚¤ãƒ™ãƒ³ãƒˆã‚’æ¤œçŸ¥ã—ãŸHANDLE
 		HANDLE workerHandle = workerEventList[worker_nRet];
 
-		//ƒCƒxƒ“ƒg’²¸
+		//ã‚¤ãƒ™ãƒ³ãƒˆèª¿æŸ»
 		WSANETWORKEVENTS events;
 		if (WSAEnumNetworkEvents(_socket, workerHandle, &events) == SOCKET_ERROR)
 		{
@@ -148,14 +150,14 @@ void ConnectClient::func()
 		//READ
 		if (events.lNetworkEvents & FD_READ)
 		{
-			// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚Éƒf[ƒ^‚ª“’…‚µ‚½
+			// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã«ãƒ‡ãƒ¼ã‚¿ãŒåˆ°ç€ã—ãŸ
 			recvHandler(workerHandle);
 		}
 
 		//CLOSE
 		if (events.lNetworkEvents & FD_CLOSE)
 		{
-			// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚ÌƒNƒ[ƒY‚ğŒŸ’m
+			// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã®ã‚¯ãƒ­ãƒ¼ã‚ºã‚’æ¤œçŸ¥
 			closeHandler(workerHandle);
 		}
 	}
@@ -170,7 +172,7 @@ void ConnectClient::func()
 		tmpEvent = INVALID_HANDLE_VALUE;
 	}
 
-	//while”²‚¯‚½‚çƒtƒ‰ƒO“|‚·
+	//whileæŠœã‘ãŸã‚‰ãƒ•ãƒ©ã‚°å€’ã™
 	std::lock_guard<std::mutex> lk(m_mutex);
 	_live = false;
 
@@ -179,7 +181,7 @@ void ConnectClient::func()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒNƒ‰ƒCƒAƒ“ƒg‚©‚ç‚Ìƒf[ƒ^ó•t‚Ìƒnƒ“ƒhƒ‰
+// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã‹ã‚‰ã®ãƒ‡ãƒ¼ã‚¿å—ä»˜æ™‚ã®ãƒãƒ³ãƒ‰ãƒ©
 ///////////////////////////////////////////////////////////////////////////////
 #ifdef _WIN64
 bool ConnectClient::recvHandler(HANDLE& hEvent)
@@ -187,59 +189,61 @@ bool ConnectClient::recvHandler(HANDLE& hEvent)
 bool ConnectClient::recvHandler()
 #endif
 {
-	write_log(2, "ƒNƒ‰ƒCƒAƒ“ƒg(%ld)‚©‚çƒf[ƒ^‚ğóM, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+	write_log(2, "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ(%ld)ã‹ã‚‰ãƒ‡ãƒ¼ã‚¿ã‚’å—ä¿¡, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 	char buf[1024];
 	int stSize = recv(_socket, buf, sizeof(buf), 0);
 	if (stSize <= 0) {
 		write_log(4, "recv error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
-		write_log(4, "ƒNƒ‰ƒCƒAƒ“ƒg(%ld)‚Æ‚ÌÚ‘±‚ªØ‚ê‚Ü‚µ‚½, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+		write_log(4, "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ(%ld)ã¨ã®æ¥ç¶šãŒåˆ‡ã‚Œã¾ã—ãŸ, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 #ifdef _WIN64
 		deleteConnection(hEvent);
 #else
 		close(_socket);
+		_socket = INVALID_SOCKET;// â˜…â˜…â˜…konishi
 #endif
 		return true;
 	}
 
-	write_log(2, "•ÏŠ·‘O:[%s] ==> %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+	write_log(2, "å¤‰æ›å‰:[%s] ==> %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 
-	for (int i = 0; i < (int)stSize; i++) { // buf‚Ì’†‚Ì¬•¶š‚ğ‘å•¶š‚É•ÏŠ·
+	for (int i = 0; i < (int)stSize; i++) { // bufã®ä¸­ã®å°æ–‡å­—ã‚’å¤§æ–‡å­—ã«å¤‰æ›
 		if (isalpha(buf[i])) {
 			buf[i] = toupper(buf[i]);
 		}
 	}
 
-	// ƒNƒ‰ƒCƒAƒ“ƒg‚É•ÔM
+	// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã«è¿”ä¿¡
 	stSize = send(_socket, buf, strlen(buf) + 1, 0);
 
 	if (stSize != strlen(buf) + 1) {
 		write_log(4, "send error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
-		write_log(4, "ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚ÌÚ‘±‚ªØ‚ê‚Ü‚µ‚½, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		write_log(4, "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®æ¥ç¶šãŒåˆ‡ã‚Œã¾ã—ãŸ, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 #ifdef _WIN64
 		deleteConnection(hEvent);
 #else
 		close(_socket);
+		_socket = INVALID_SOCKET;// â˜…â˜…â˜…konishi
 #endif
 		return true;
 	}
 
-	write_log(2, "•ÏŠ·Œã:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+	write_log(2, "å¤‰æ›å¾Œ:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 	return true;
 }
 
 #ifdef _WIN64
 ///////////////////////////////////////////////////////////////////////////////
-// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚ÌØ’fŒŸ’m‚Ìƒnƒ“ƒhƒ‰
+// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã®åˆ‡æ–­æ¤œçŸ¥æ™‚ã®ãƒãƒ³ãƒ‰ãƒ©
 ///////////////////////////////////////////////////////////////////////////////
 bool ConnectClient::closeHandler(HANDLE& hEvent)
 {
-	write_log(4, "ƒNƒ‰ƒCƒAƒ“ƒg(%d)‚Æ‚ÌÚ‘±‚ªØ‚ê‚Ü‚µ‚½, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+	write_log(4, "ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆ(%d)ã¨ã®æ¥ç¶šãŒåˆ‡ã‚Œã¾ã—ãŸ, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 	deleteConnection(hEvent);
 	return true;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// w’è‚³‚ê‚½ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‹‚Æƒ\ƒPƒbƒgƒNƒ[ƒY
+// æŒ‡å®šã•ã‚ŒãŸã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ³ãƒ‰ãƒ«ã¨ã‚½ã‚±ãƒƒãƒˆã‚¯ãƒ­ãƒ¼ã‚º
 ///////////////////////////////////////////////////////////////////////////////
 void ConnectClient::deleteConnection(HANDLE& hEvent)
 {

@@ -1,16 +1,16 @@
-#pragma once
+ï»¿#pragma once
 #include <mutex>
 
 #ifndef _WIN64
 typedef int SOCKET;
 #endif
 ///////////////////////////////////////////////////////////////////////////////
-//ˆø”‚ ‚èAƒNƒ‰ƒX‚Å‚ÌŠÖ”ƒIƒuƒWƒFƒNƒg
+//å¼•æ•°ã‚ã‚Šã€ã‚¯ãƒ©ã‚¹ã§ã®é–¢æ•°ã‚ªãƒ–ã‚¸ã‚§ã‚¯ãƒˆ
 ///////////////////////////////////////////////////////////////////////////////
 class ConnectClient {
 public:
-	bool _live;//¶‘¶ŠÇ—ƒtƒ‰ƒO
-	std::mutex	m_mutex;//¶‘¶ŠÇ—ƒtƒ‰ƒO—p”r‘¼
+	bool _live;//ç”Ÿå­˜ç®¡ç†ãƒ•ãƒ©ã‚°
+	std::mutex	m_mutex;//ç”Ÿå­˜ç®¡ç†ãƒ•ãƒ©ã‚°ç”¨æ’ä»–
 	~ConnectClient();
 	void func();
 private:
@@ -19,16 +19,16 @@ public:
 	ConnectClient(SOCKET dstSocket);
 private:
 #ifdef _WIN64
-	// ƒNƒ‰ƒCƒAƒ“ƒg‚©‚ç‚Ìƒf[ƒ^ó•t‚Ìƒnƒ“ƒhƒ‰
+	// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã‹ã‚‰ã®ãƒ‡ãƒ¼ã‚¿å—ä»˜æ™‚ã®ãƒãƒ³ãƒ‰ãƒ©
 	bool recvHandler(HANDLE& hEvent);
 #else
 	bool recvHandler();
 #endif
 #ifdef _WIN64
-	// ƒNƒ‰ƒCƒAƒ“ƒg‚Æ‚Ì’ÊMƒ\ƒPƒbƒg‚ÌØ’fŒŸ’m‚Ìƒnƒ“ƒhƒ‰
+	// ã‚¯ãƒ©ã‚¤ã‚¢ãƒ³ãƒˆã¨ã®é€šä¿¡ã‚½ã‚±ãƒƒãƒˆã®åˆ‡æ–­æ¤œçŸ¥æ™‚ã®ãƒãƒ³ãƒ‰ãƒ©
 	bool closeHandler(HANDLE& hEvent);
 
-	// w’è‚³‚ê‚½ƒCƒxƒ“ƒgƒnƒ“ƒhƒ‹‚Æƒ\ƒPƒbƒgƒNƒ[ƒYAmap‚©‚ç‚Ìíœ
+	// æŒ‡å®šã•ã‚ŒãŸã‚¤ãƒ™ãƒ³ãƒˆãƒãƒ³ãƒ‰ãƒ«ã¨ã‚½ã‚±ãƒƒãƒˆã‚¯ãƒ­ãƒ¼ã‚ºã€mapã‹ã‚‰ã®å‰Šé™¤
 	void deleteConnection(HANDLE& hEvent);
 #endif
 };
