@@ -14,7 +14,7 @@ public:
 	~ConnectClient();
 	void func();
 private:
-	int  _socket;
+	SOCKET  _socket;
 public:
 	ConnectClient(SOCKET dstSocket);
 private:
