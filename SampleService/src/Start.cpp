@@ -21,7 +21,7 @@
 using namespace std;
 
 int fdStart = -1;//立ち上がり完了報告用fd;
-int nyte;
+int nByte;
 char buff[256];
 int nRet;
 
