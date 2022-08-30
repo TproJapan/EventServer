@@ -13,7 +13,7 @@ Linux 1_71
 
 (2) Set Boost Path
 
-    Open the file "EventServer/SampleService/SampleService/Boost_Path.txt"
+    Open the file "EventServer/SampleService/SampleService/BoostPath.txt"
 
     Override the first line with your boost include path.
 
@@ -35,7 +35,7 @@ Linux 1_71
 
 (5) Build the rest of the Projects
 
-    Override the "SERVICE_EXE_FILEPATH" in install.cpp(in install Project) and uninstall.cpp(in uninstall Project) with the full path you got in (4).
+    Override the "SERVICE_EXE_FILEPATH" in Install.cpp(in Install Project) and Uninstall.cpp(in Uninstall Project) with the full path you got in (4).
     Then, build the SampleService solution.
 
 (6) Install the "SampleServe" as a Windows Service
@@ -43,7 +43,7 @@ Linux 1_71
     Open CMD as Admin
     # cd EventServer/SampleService/x64/Debug
 
-    # install.exe
+    # Install.exe
 
 (7) Add port number for this Application in services file
 
@@ -132,4 +132,4 @@ Linux 1_71
     Open CMD as Admin
     # cd EventServer/SampleService/x64/Debug
 
-    # uninstall.exe
+    # Uninstall.exe

@@ -6,7 +6,7 @@
 #include <stdio.h>
 #include <string.h>
 #define BUFSIZE 1024
-#define BoostPathTxtPath "..\\..\\..\\Boost_Path.txt"//exeファイルと同ディレクトリ
+#define BoostPathTxtPath "..\\..\\..\\BoostPath.txt"//exeファイルと同ディレクトリ
 #define vcxprojPath "..\\..\\..\\SampleService.vcxproj"//exeファイルからの相対path
 
 //ファイル名filenameの中身の該当箇所にincludePath,libraryPathを設定し、string型newFileContentを生成
