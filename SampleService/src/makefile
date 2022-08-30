@@ -1,4 +1,4 @@
-CC = g++
+﻿CC = g++
 BUILDDIR = ../build
 SRCDIR    = ./
 SOURCES   = $(wildcard $(SRCDIR)/*.cpp)

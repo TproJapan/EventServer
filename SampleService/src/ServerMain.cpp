@@ -1,4 +1,4 @@
-#ifndef _WIN64
+﻿#ifndef _WIN64
 #include <signal.h>
 #include <errno.h>
 #include <stdio.h>

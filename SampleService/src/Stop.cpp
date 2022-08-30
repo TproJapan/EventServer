@@ -1,4 +1,4 @@
-#ifdef __GNUC__
+﻿#ifdef __GNUC__
 #include <signal.h>
 #include <unistd.h>
 #include <stdlib.h>
