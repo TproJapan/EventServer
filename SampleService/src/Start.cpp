@@ -21,7 +21,7 @@
 using namespace std;
 
 int fdStart = -1;//立ち上がり完了報告用fd;
-int nbyte;
+int nyte;
 char buff[256];
 int nRet;
 
@@ -123,11 +123,11 @@ int main(int argc, char* argv[])
     bool flag = true;
 
     while (flag == true){
-        if((nbyte = read(fdStart, buff, sizeof(buff))) > 0){
-            write(fileno(stdout), buff, nbyte);
+        if((nByte = read(fdStart, buff, sizeof(buff))) > 0){
+            write(fileno(stdout), buff, nByte);
 			printf("\n");
             flag = false;
-        }else if(nbyte == -1){
+        }else if(nByte == -1){
 			perror("write()\n");
 			closeStartPipe();
 			return -1;
