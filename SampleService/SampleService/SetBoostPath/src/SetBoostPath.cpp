@@ -59,7 +59,7 @@ int main()
     // Change SampleService.vcxproj
     //////////////////////////////////
     string newFileContent = "";
-    int result = Change_File(
+    int result = changeFile(
         (char*)vcxprojPath,
         includePath,
         libraryPath,
@@ -74,7 +74,7 @@ int main()
     //////////////////////////////////
     // Update SampleService.vcxproj
     //////////////////////////////////
-    result = Save_File((char*)vcxprojPath, newFileContent.c_str());
+    result = saveFile((char*)vcxprojPath, newFileContent.c_str());
 
     if (result != 0)
     {

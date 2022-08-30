@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 
 #include <iostream>
 #include <winsock.h>
@@ -6,18 +6,18 @@
 #include <stdio.h>
 #include <string.h>
 #define BUFSIZE 1024
-#define BoostPathTxtPath "..\\..\\..\\Boost_Path.txt"//exeƒtƒ@ƒCƒ‹‚Æ“¯ƒfƒBƒŒƒNƒgƒŠ
-#define vcxprojPath "..\\..\\..\\SampleService.vcxproj"//exeƒtƒ@ƒCƒ‹‚©‚ç‚Ì‘Š‘Îpath
+#define BoostPathTxtPath "..\\..\\..\\Boost_Path.txt"//exeãƒ•ã‚¡ã‚¤ãƒ«ã¨åŒãƒ‡ã‚£ãƒ¬ã‚¯ãƒˆãƒª
+#define vcxprojPath "..\\..\\..\\SampleService.vcxproj"//exeãƒ•ã‚¡ã‚¤ãƒ«ã‹ã‚‰ã®ç›¸å¯¾path
 
-//ƒtƒ@ƒCƒ‹–¼filename‚Ì’†g‚ÌŠY“–‰ÓŠ‚ÉincludePath,libraryPath‚ğİ’è‚µAstringŒ^newFileContent‚ğ¶¬
-int Change_File(char* fileName,
+//ãƒ•ã‚¡ã‚¤ãƒ«åfilenameã®ä¸­èº«ã®è©²å½“ç®‡æ‰€ã«includePath,libraryPathã‚’è¨­å®šã—ã€stringå‹newFileContentã‚’ç”Ÿæˆ
+int changeFile(char* fileName,
 	char* includePath,
 	char* libraryPath,
 	std::string& newFileContent);
 
-//•¶š—ñ’uŠ·
-//s:ŒŸõ‘ÎÛ•¶š—ñAstr1;ŒŸõ•¶š—ñAstr2;’uŠ·•¶š—ñ
+//æ–‡å­—åˆ—ç½®æ›
+//s:æ¤œç´¢å¯¾è±¡æ–‡å­—åˆ—ã€str1;æ¤œç´¢æ–‡å­—åˆ—ã€str2;ç½®æ›æ–‡å­—åˆ—
 char* replace(char* s, const char* before, const char* after);
 
-//ƒtƒ@ƒCƒ‹–¼file_In‚Écontent‚ğã‘‚«•Û‘¶
-int Save_File(char* file_In, const char* content);
+//ãƒ•ã‚¡ã‚¤ãƒ«åfile_Inã«contentã‚’ä¸Šæ›¸ãä¿å­˜
+int saveFile(char* file_In, const char* content);

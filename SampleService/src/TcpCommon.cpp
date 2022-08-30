@@ -1,4 +1,4 @@
-#ifndef _WIN64
+﻿#ifndef _WIN64
 #define __TCPCOMMON__
 #endif
 #include "TcpCommon.h"

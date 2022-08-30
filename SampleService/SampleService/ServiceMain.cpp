@@ -1,6 +1,6 @@
-#ifdef _WIN64
+ï»¿#ifdef _WIN64
 ///////////////////////////////////////////////////////////////////////////////
-// ƒT[ƒrƒXƒvƒƒOƒ‰ƒ€‚ÌƒTƒ“ƒvƒ‹
+// ã‚µãƒ¼ãƒ“ã‚¹ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã®ã‚µãƒ³ãƒ—ãƒ«
 ///////////////////////////////////////////////////////////////////////////////
 #include <stdio.h>
 #include "../src/BoostLog.h"
@@ -17,25 +17,25 @@ const char* LOGFILE_NAME = "C:\\tmp\\SampleService.log";
 LPWSTR SERVICE_NAME = (LPWSTR)L"SampleService";
 
 ///////////////////////////////////////////////////////////////////////////////
-// ŠO•”•Ï”
+// å¤–éƒ¨å¤‰æ•°
 ///////////////////////////////////////////////////////////////////////////////
 //CLog logObj;
 SERVICE_STATUS_HANDLE serviceStatusHandle;
-// ó‘Ôî•ñ‚ğSCM‚Æ‚ÌŠÔ‚Å’Ê’m‚µ‚ ‚¤‚½‚ß‚Ég—p‚·‚éƒnƒ“ƒhƒ‹
-// RegisterServiceCtrlHandlerŠÖ”‚É‚æ‚Á‚Äì¬‚³‚ê‚é
+// çŠ¶æ…‹æƒ…å ±ã‚’SCMã¨ã®é–“ã§é€šçŸ¥ã—ã‚ã†ãŸã‚ã«ä½¿ç”¨ã™ã‚‹ãƒãƒ³ãƒ‰ãƒ«
+// RegisterServiceCtrlHandleré–¢æ•°ã«ã‚ˆã£ã¦ä½œæˆã•ã‚Œã‚‹
 
-// ServiceMain‚ªŠ®—¹‚·‚é‚Ì‚ğ–h~‚·‚é‚½‚ß‚Ég—p‚·‚éƒCƒxƒ“ƒg
+// ServiceMainãŒå®Œäº†ã™ã‚‹ã®ã‚’é˜²æ­¢ã™ã‚‹ãŸã‚ã«ä½¿ç”¨ã™ã‚‹ã‚¤ãƒ™ãƒ³ãƒˆ
 HANDLE terminateEvent = NULL;
 
-// ÀÛ‚Ìˆ—‚ğs‚¤‚½‚ß‚ÌƒXƒŒƒbƒh
+// å®Ÿéš›ã®å‡¦ç†ã‚’è¡Œã†ãŸã‚ã®ã‚¹ãƒ¬ãƒƒãƒ‰
 HANDLE threadHandle = 0;
 
-// ƒT[ƒrƒX‚ÌŒ»İ‚Ìó‘Ô‚ğŠi”[‚·‚éƒtƒ‰ƒO
+// ã‚µãƒ¼ãƒ“ã‚¹ã®ç¾åœ¨ã®çŠ¶æ…‹ã‚’æ ¼ç´ã™ã‚‹ãƒ•ãƒ©ã‚°
 BOOL pauseServise = FALSE;
 BOOL runningService = FALSE;
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒvƒƒgƒ^ƒCƒvéŒ¾
+// ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—å®£è¨€
 ///////////////////////////////////////////////////////////////////////////////
 bool registServiceMain();
 VOID ServiceMain(DWORD argc, LPSTR* argv);
@@ -53,7 +53,7 @@ VOID PauseService();
 DWORD ServiceThread(LPDWORD param);
 TcpServer* tcpServer;
 ///////////////////////////////////////////////////////////////////////////////
-// ƒƒCƒ“ˆ—
+// ãƒ¡ã‚¤ãƒ³å‡¦ç†
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 	bool bRet;
 
 	writeLog(2, "main started, %s %d %s\n", __FILENAME__, __LINE__, __func__);
-	// ƒT[ƒrƒXƒƒCƒ“ŠÖ”‚ğSCM‚É“o˜^‚·‚é
+	// ã‚µãƒ¼ãƒ“ã‚¹ãƒ¡ã‚¤ãƒ³é–¢æ•°ã‚’SCMã«ç™»éŒ²ã™ã‚‹
 	bRet = registServiceMain();
 	if (!bRet) {
 		writeLog(4, "registServiceMain error. (%ld),%s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
@@ -75,7 +75,7 @@ int main(int argc, char* argv[])
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// SCM‚ÉƒT[ƒrƒX‚ÌmainŠÖ”‚ğ“o˜^‚·‚é
+// SCMã«ã‚µãƒ¼ãƒ“ã‚¹ã®mainé–¢æ•°ã‚’ç™»éŒ²ã™ã‚‹
 ///////////////////////////////////////////////////////////////////////////////
 bool registServiceMain()
 {
@@ -87,7 +87,7 @@ bool registServiceMain()
 
 	writeLog(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
-	// SCM‚É“o˜^‚·‚é
+	// SCMã«ç™»éŒ²ã™ã‚‹
 	BOOL success = StartServiceCtrlDispatcher(serviceTable);
 	if (!success)
 	{
@@ -100,14 +100,14 @@ bool registServiceMain()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// SCM‚ÉƒT[ƒrƒX‚ÌmainŠÖ”‚ğ“o˜^‚·‚é
+// SCMã«ã‚µãƒ¼ãƒ“ã‚¹ã®mainé–¢æ•°ã‚’ç™»éŒ²ã™ã‚‹
 ///////////////////////////////////////////////////////////////////////////////
 VOID ServiceMain(DWORD argc, LPSTR* argv)
 {
 	BOOL success;
 	writeLog(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
-	// ‘¦À‚É“o˜^ŠÖ”‚ğŒÄ‚Ño‚·
+	// å³åº§ã«ç™»éŒ²é–¢æ•°ã‚’å‘¼ã³å‡ºã™
 	serviceStatusHandle = RegisterServiceCtrlHandler(SERVICE_NAME,
 		(LPHANDLER_FUNCTION)ServiceCtrlHandler);
 	if (!serviceStatusHandle)
@@ -120,7 +120,7 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 
 	writeLog(2, "RegisterServiceCtrlHandler normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
-	// isó‹µ‚ğSCM‚É’Ê’m‚·‚é
+	// é€²è¡ŒçŠ¶æ³ã‚’SCMã«é€šçŸ¥ã™ã‚‹
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 1, 5000);
 	if (!success)
 	{
@@ -129,7 +129,7 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 		return;
 	}
 
-	// I—¹ƒCƒxƒ“ƒg‚ğì¬‚·‚é
+	// çµ‚äº†ã‚¤ãƒ™ãƒ³ãƒˆã‚’ä½œæˆã™ã‚‹
 	terminateEvent = CreateEvent(0, TRUE, FALSE, 0);
 	if (!terminateEvent)
 	{
@@ -141,7 +141,7 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 
 	writeLog(2, "CreateEvent normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
-	// isó‹µ‚ğSCM‚É’Ê’m‚·‚é
+	// é€²è¡ŒçŠ¶æ³ã‚’SCMã«é€šçŸ¥ã™ã‚‹
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 2, 1000);
 	if (!success)
 	{
@@ -151,7 +151,7 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 		return;
 	}
 
-	// isó‹µ‚ğSCM‚É’Ê’m‚·‚é
+	// é€²è¡ŒçŠ¶æ³ã‚’SCMã«é€šçŸ¥ã™ã‚‹
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 3, 5000);
 	if (!success)
 	{
@@ -161,7 +161,7 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 		return;
 	}
 
-	// ƒT[ƒrƒX©‘Ì‚ğŠJn‚·‚é
+	// ã‚µãƒ¼ãƒ“ã‚¹è‡ªä½“ã‚’é–‹å§‹ã™ã‚‹
 	success = InitService();
 	if (!success)
 	{
@@ -170,8 +170,8 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 		return;
 	}
 
-	// ‚±‚Ì“_‚ÅƒT[ƒrƒX‚ÍÀsó‘Ô‚É‚È‚Á‚Ä‚¢‚éB
-	// isó‹µ‚ğSCM‚É’Ê’m‚·‚é
+	// ã“ã®æ™‚ç‚¹ã§ã‚µãƒ¼ãƒ“ã‚¹ã¯å®Ÿè¡ŒçŠ¶æ…‹ã«ãªã£ã¦ã„ã‚‹ã€‚
+	// é€²è¡ŒçŠ¶æ³ã‚’SCMã«é€šçŸ¥ã™ã‚‹
 	success = SendStatusToSCM(SERVICE_RUNNING, NO_ERROR, 0, 0, 0);
 	if (!success)
 	{
@@ -192,35 +192,35 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ServiceMainŠÖ”‚ÅƒGƒ‰[‚ª”­¶‚µ‚½ê‡‚Ìˆ—‚Æ‚µ‚ÄA
-// ƒNƒŠ[ƒ“ƒAƒbƒv‚ğs‚¢AƒT[ƒrƒX‚ªŠJn‚µ‚È‚©‚Á‚½‚±‚Æ‚ğ
-// SCM‚É’Ê’m‚·‚éB
+// ServiceMainé–¢æ•°ã§ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿã—ãŸå ´åˆã®å‡¦ç†ã¨ã—ã¦ã€
+// ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—ã‚’è¡Œã„ã€ã‚µãƒ¼ãƒ“ã‚¹ãŒé–‹å§‹ã—ãªã‹ã£ãŸã“ã¨ã‚’
+// SCMã«é€šçŸ¥ã™ã‚‹ã€‚
 ///////////////////////////////////////////////////////////////////////////////
 VOID terminate(DWORD error)
 {
 	writeLog(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
-	// terminateEventƒnƒ“ƒhƒ‹‚ªì¬‚³‚ê‚Ä‚¢‚éê‡‚Í•Â‚¶‚é
+	// terminateEventãƒãƒ³ãƒ‰ãƒ«ãŒä½œæˆã•ã‚Œã¦ã„ã‚‹å ´åˆã¯é–‰ã˜ã‚‹
 	if (terminateEvent) {
-		writeLog(2, "terminateEvent‚ğƒNƒ[ƒY. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(2, "terminateEventã‚’ã‚¯ãƒ­ãƒ¼ã‚º. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		CloseHandle(terminateEvent);
 	}
 
-	// ƒT[ƒrƒX‚ª’â~‚µ‚½‚±‚Æ‚ğ’Ê’m‚·‚é‚½‚ß‚ÉSCM‚ÉƒƒbƒZ[ƒW‚ğ‘—M‚·‚é
+	// ã‚µãƒ¼ãƒ“ã‚¹ãŒåœæ­¢ã—ãŸã“ã¨ã‚’é€šçŸ¥ã™ã‚‹ãŸã‚ã«SCMã«ãƒ¡ãƒƒã‚»ãƒ¼ã‚¸ã‚’é€ä¿¡ã™ã‚‹
 	if (serviceStatusHandle)
 	{
-		writeLog(2, "SCM‚ÉƒT[ƒrƒX‚Ì’â~‚ğ’Ê’m. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(2, "SCMã«ã‚µãƒ¼ãƒ“ã‚¹ã®åœæ­¢ã‚’é€šçŸ¥. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		SendStatusToSCM(SERVICE_STOPPED, error, 0, 0, 0);
 	}
 
-	// ƒXƒŒƒbƒh‚ªŠJn‚³‚ê‚Ä‚¢‚éê‡‚ÍA‚»‚ê‚ğI—¹‚·‚é
+	// ã‚¹ãƒ¬ãƒƒãƒ‰ãŒé–‹å§‹ã•ã‚Œã¦ã„ã‚‹å ´åˆã¯ã€ãã‚Œã‚’çµ‚äº†ã™ã‚‹
 	if (threadHandle)
 	{
-		writeLog(2, "threadHandle‚ğƒNƒ[ƒY. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(2, "threadHandleã‚’ã‚¯ãƒ­ãƒ¼ã‚º. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		CloseHandle(threadHandle);
 	}
 
-	// serviceStatusHandle‚Í•Â‚¶‚é•K—v‚ª‚È‚¢B
+	// serviceStatusHandleã¯é–‰ã˜ã‚‹å¿…è¦ãŒãªã„ã€‚
 
 	writeLog(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
@@ -228,8 +228,8 @@ VOID terminate(DWORD error)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ‚±‚ÌŠÖ”‚ÍASetServiceStatusŠÖ”‚É‚æ‚Á‚Ä
-// ƒT[ƒrƒX‚Ìó‘Ô‚ğXV‚·‚éˆ—‚ğ‚Ü‚Æ‚ß‚ÄÀs‚·‚éB
+// ã“ã®é–¢æ•°ã¯ã€SetServiceStatusé–¢æ•°ã«ã‚ˆã£ã¦
+// ã‚µãƒ¼ãƒ“ã‚¹ã®çŠ¶æ…‹ã‚’æ›´æ–°ã™ã‚‹å‡¦ç†ã‚’ã¾ã¨ã‚ã¦å®Ÿè¡Œã™ã‚‹ã€‚
 ///////////////////////////////////////////////////////////////////////////////
 BOOL SendStatusToSCM(DWORD dwCurrentState,
 	DWORD dwWin32ExitCode,
@@ -242,12 +242,12 @@ BOOL SendStatusToSCM(DWORD dwCurrentState,
 
 	writeLog(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
-	// SERVICE_STATUS\‘¢‘Ì‚Ì‚·‚×‚Ä‚Ìƒƒ“ƒo‚É’l‚ğİ’è‚·‚éB
+	// SERVICE_STATUSæ§‹é€ ä½“ã®ã™ã¹ã¦ã®ãƒ¡ãƒ³ãƒã«å€¤ã‚’è¨­å®šã™ã‚‹ã€‚
 	status.dwServiceType = SERVICE_WIN32_OWN_PROCESS;
 	status.dwCurrentState = dwCurrentState;
 
-	// ‰½‚ç‚©‚Ìˆ—‚ğs‚Á‚Ä‚¢‚éê‡‚ÍAƒRƒ“ƒgƒ[ƒ‹ƒCƒxƒ“ƒg‚ğó‚¯æ‚ç‚È‚¢B
-	// ‚»‚êˆÈŠO‚Ìê‡‚ÍAƒRƒ“ƒgƒ[ƒ‹ƒCƒxƒ“ƒg‚ğó‚¯æ‚éB
+	// ä½•ã‚‰ã‹ã®å‡¦ç†ã‚’è¡Œã£ã¦ã„ã‚‹å ´åˆã¯ã€ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã‚¤ãƒ™ãƒ³ãƒˆã‚’å—ã‘å–ã‚‰ãªã„ã€‚
+	// ãã‚Œä»¥å¤–ã®å ´åˆã¯ã€ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ã‚¤ãƒ™ãƒ³ãƒˆã‚’å—ã‘å–ã‚‹ã€‚
 	if (dwCurrentState == SERVICE_START_PENDING)
 	{
 		status.dwControlsAccepted = 0;
@@ -259,8 +259,8 @@ BOOL SendStatusToSCM(DWORD dwCurrentState,
 			SERVICE_ACCEPT_SHUTDOWN;
 	}
 
-	// “Á’è‚ÌI—¹ƒR[ƒh‚ª’è‹`‚³‚ê‚Ä‚¢‚éê‡‚Í
-	// win32‚ÌI—¹ƒR[ƒh‚ğ³‚µ‚­İ’è‚·‚éB
+	// ç‰¹å®šã®çµ‚äº†ã‚³ãƒ¼ãƒ‰ãŒå®šç¾©ã•ã‚Œã¦ã„ã‚‹å ´åˆã¯
+	// win32ã®çµ‚äº†ã‚³ãƒ¼ãƒ‰ã‚’æ­£ã—ãè¨­å®šã™ã‚‹ã€‚
 	if (dwServiceSpecificExitCode == 0)
 	{
 		status.dwWin32ExitCode = dwWin32ExitCode;
@@ -274,7 +274,7 @@ BOOL SendStatusToSCM(DWORD dwCurrentState,
 	status.dwCheckPoint = dwCheckPoint;
 	status.dwWaitHint = dwWaitHint;
 
-	// ó‘ÔƒŒƒR[ƒh‚ğSCM‚É“n‚·B
+	// çŠ¶æ…‹ãƒ¬ã‚³ãƒ¼ãƒ‰ã‚’SCMã«æ¸¡ã™ã€‚
 	success = SetServiceStatus(serviceStatusHandle, &status);
 	if (!success)
 	{
@@ -289,8 +289,8 @@ BOOL SendStatusToSCM(DWORD dwCurrentState,
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒT[ƒrƒXƒRƒ“ƒgƒ[ƒ‹ƒ}ƒl[ƒWƒƒ‚©‚çó‚¯æ‚Á‚½ƒCƒxƒ“ƒg‚ğ
-// ƒfƒBƒXƒpƒbƒ`‚·‚éB
+// ã‚µãƒ¼ãƒ“ã‚¹ã‚³ãƒ³ãƒˆãƒ­ãƒ¼ãƒ«ãƒãƒãƒ¼ã‚¸ãƒ£ã‹ã‚‰å—ã‘å–ã£ãŸã‚¤ãƒ™ãƒ³ãƒˆã‚’
+// ãƒ‡ã‚£ã‚¹ãƒ‘ãƒƒãƒã™ã‚‹ã€‚
 ///////////////////////////////////////////////////////////////////////////////
 VOID ServiceCtrlHandler(DWORD controlCode)
 {
@@ -301,30 +301,30 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 
 	switch (controlCode)
 	{
-		// ŠJn‚ÍSeviceMainŠÖ”‚ªŒÄ‚Ño‚³‚ê‚é‚Ì‚Å
-		// START(ŠJn)ƒIƒvƒVƒ‡ƒ“‚Í‚È‚¢
+		// é–‹å§‹æ™‚ã¯SeviceMainé–¢æ•°ãŒå‘¼ã³å‡ºã•ã‚Œã‚‹ã®ã§
+		// START(é–‹å§‹)ã‚ªãƒ—ã‚·ãƒ§ãƒ³ã¯ãªã„
 
-		// ƒT[ƒrƒX‚ğ’â~‚·‚é
+		// ã‚µãƒ¼ãƒ“ã‚¹ã‚’åœæ­¢ã™ã‚‹
 	case SERVICE_CONTROL_STOP:
 		writeLog(2, "SERVICE_CONTROL_STOP. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 		currentState = SERVICE_STOP_PENDING;
-		// Œ»İ‚Ìó‘Ô‚ğSCM‚É’Ê’m‚·‚é
+		// ç¾åœ¨ã®çŠ¶æ…‹ã‚’SCMã«é€šçŸ¥ã™ã‚‹
 		success = SendStatusToSCM(SERVICE_STOP_PENDING,
 			NO_ERROR, 0, 1, 5000);
-		// ¬Œ÷‚µ‚È‚©‚Á‚½ê‡A“Á‚É‰½‚à‚µ‚È‚¢
+		// æˆåŠŸã—ãªã‹ã£ãŸå ´åˆã€ç‰¹ã«ä½•ã‚‚ã—ãªã„
 
-		// ƒT[ƒrƒX‚ğ’â~‚·‚é
+		// ã‚µãƒ¼ãƒ“ã‚¹ã‚’åœæ­¢ã™ã‚‹
 		StopService();
 		return;
 
-		// ƒT[ƒrƒX‚ğˆê’â~‚·‚é
+		// ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä¸€æ™‚åœæ­¢ã™ã‚‹
 	case SERVICE_CONTROL_PAUSE:
 		writeLog(2, "SERVICE_CONTROL_PAUSE. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 		if (runningService && !pauseServise)
 		{
-			// Œ»İ‚Ìó‘Ô‚ğSCM‚É’Ê’m‚·‚é
+			// ç¾åœ¨ã®çŠ¶æ…‹ã‚’SCMã«é€šçŸ¥ã™ã‚‹
 			success = SendStatusToSCM(SERVICE_PAUSE_PENDING,
 				NO_ERROR, 0, 1, 1000);
 			PauseService();
@@ -332,13 +332,13 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 		}
 		break;
 
-		// ˆê’â~‚©‚çÄŠJ‚·‚é
+		// ä¸€æ™‚åœæ­¢ã‹ã‚‰å†é–‹ã™ã‚‹
 	case SERVICE_CONTROL_CONTINUE:
 		writeLog(2, "SERVICE_CONTROL_CONTINUE. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 		if (runningService && pauseServise)
 		{
-			// Œ»İ‚Ìó‘Ô‚ğSCM‚É’Ê’m‚·‚é
+			// ç¾åœ¨ã®çŠ¶æ…‹ã‚’SCMã«é€šçŸ¥ã™ã‚‹
 			success = SendStatusToSCM(SERVICE_CONTINUE_PENDING,
 				NO_ERROR, 0, 1, 1000);
 			ResumeService();
@@ -346,16 +346,16 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 		}
 		break;
 
-		// Œ»İ‚Ìó‘Ô‚ğXV‚·‚é
+		// ç¾åœ¨ã®çŠ¶æ…‹ã‚’æ›´æ–°ã™ã‚‹
 	case SERVICE_CONTROL_INTERROGATE:
-		// ‚±‚Ìswitch•ª‚ÌŒã‚És‚Éi‚İAó‘Ô‚ğ‘—M‚·‚é
+		// ã“ã®switchåˆ†ã®å¾Œã«è¡Œã«é€²ã¿ã€çŠ¶æ…‹ã‚’é€ä¿¡ã™ã‚‹
 		writeLog(2, "SERVICE_CONTROL_INTERROGATE. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		break;
 
-		// ƒVƒƒƒbƒgƒ_ƒEƒ“‚É‚Í‰½‚à‚µ‚È‚¢B‚±‚±‚ÅƒNƒŠ[ƒ“ƒAƒbƒv‚ğ
-		// s‚¤‚±‚Æ‚ª‚Å‚«‚é‚ªA”ñí‚É‚·‚Î‚â‚­s‚í‚È‚¯‚ê‚Î‚È‚ç‚È‚¢B
+		// ã‚·ãƒ£ãƒƒãƒˆãƒ€ã‚¦ãƒ³æ™‚ã«ã¯ä½•ã‚‚ã—ãªã„ã€‚ã“ã“ã§ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—ã‚’
+		// è¡Œã†ã“ã¨ãŒã§ãã‚‹ãŒã€éå¸¸ã«ã™ã°ã‚„ãè¡Œã‚ãªã‘ã‚Œã°ãªã‚‰ãªã„ã€‚
 	case SERVICE_CONTROL_SHUTDOWN:
-		// ƒVƒƒƒbƒgƒ_ƒEƒ“‚É‚Í‰½‚à‚µ‚È‚¢B
+		// ã‚·ãƒ£ãƒƒãƒˆãƒ€ã‚¦ãƒ³æ™‚ã«ã¯ä½•ã‚‚ã—ãªã„ã€‚
 		writeLog(2, "SERVICE_CONTROL_SHUTDOWN. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		return;
 
@@ -369,14 +369,14 @@ VOID ServiceCtrlHandler(DWORD controlCode)
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒT[ƒrƒX‚ğ‰Šú‰»‚·‚é‚½‚ß‚É‚»‚ÌƒXƒŒƒbƒh‚ğŠJn‚·‚éB
+// ã‚µãƒ¼ãƒ“ã‚¹ã‚’åˆæœŸåŒ–ã™ã‚‹ãŸã‚ã«ãã®ã‚¹ãƒ¬ãƒƒãƒ‰ã‚’é–‹å§‹ã™ã‚‹ã€‚
 ///////////////////////////////////////////////////////////////////////////////
 BOOL InitService()
 {
 	DWORD id;
 	writeLog(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
-	// ƒT[ƒrƒX‚ÌƒXƒŒƒbƒh‚ğŠJn‚·‚é
+	// ã‚µãƒ¼ãƒ“ã‚¹ã®ã‚¹ãƒ¬ãƒƒãƒ‰ã‚’é–‹å§‹ã™ã‚‹
 	threadHandle = CreateThread(0, 0,
 		(LPTHREAD_START_ROUTINE)ServiceThread,
 		0, 0, &id);
@@ -393,15 +393,15 @@ BOOL InitService()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ServiceMainŠÖ”‚ğŠ®—¹‚³‚¹‚é‚±‚Æ‚É‚æ‚Á‚ÄAƒT[ƒrƒX‚ğ’â~‚·‚éB
+// ServiceMainé–¢æ•°ã‚’å®Œäº†ã•ã›ã‚‹ã“ã¨ã«ã‚ˆã£ã¦ã€ã‚µãƒ¼ãƒ“ã‚¹ã‚’åœæ­¢ã™ã‚‹ã€‚
 ///////////////////////////////////////////////////////////////////////////////
 VOID StopService()
 {
 	writeLog(2, "%s started. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 	runningService = FALSE;
-	writeLog(2, "TcpServerMainEnd‚Ì‘Ò‹@‚ğŠJn‚µ‚Ü‚µ‚½. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "TcpServerMainEndã®å¾…æ©Ÿã‚’é–‹å§‹ã—ã¾ã—ãŸ. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
-	// Œ»İ‚Ìó‘Ô‚ğSCM‚É’Ê’m‚·‚é
+	// ç¾åœ¨ã®çŠ¶æ…‹ã‚’SCMã«é€šçŸ¥ã™ã‚‹
 	BOOL success = SendStatusToSCM(SERVICE_STOP_PENDING,
 		NO_ERROR, 0, 1, 30000);
 
@@ -418,8 +418,8 @@ VOID StopService()
 
 	writeLog(2, "CreateEvent normal ended. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
-	//TcpƒT[ƒo’â~ŠÖ”ŒÄ‚Ño‚µ
-	writeLog(2, "TcpƒT[ƒo’â~‚ğŠJn‚µ‚Ü‚µ‚½. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	//Tcpã‚µãƒ¼ãƒåœæ­¢é–¢æ•°å‘¼ã³å‡ºã—
+	writeLog(2, "Tcpã‚µãƒ¼ãƒåœæ­¢ã‚’é–‹å§‹ã—ã¾ã—ãŸ. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	if (tcpServer != NULL) tcpServer->StopTcpServer();
 
@@ -451,7 +451,7 @@ VOID StopService()
 	}
 #endif
 
-	writeLog(2, "TcpServerMainEnd‚Ì‘Ò‹@‚ğI—¹‚µ‚Ü‚µ‚½. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "TcpServerMainEndã®å¾…æ©Ÿã‚’çµ‚äº†ã—ã¾ã—ãŸ. %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 #if 1
 	if (TcpServerMainEnd)
@@ -461,7 +461,7 @@ VOID StopService()
 	}
 #endif
 
-	// ServiceMainŠÖ”‚ªŠ®—¹‚·‚éƒCƒxƒ“ƒg‚ğƒZƒbƒg‚·‚éB
+	// ServiceMainé–¢æ•°ãŒå®Œäº†ã™ã‚‹ã‚¤ãƒ™ãƒ³ãƒˆã‚’ã‚»ãƒƒãƒˆã™ã‚‹ã€‚
 	SetEvent(terminateEvent);
 	writeLog(2, "%s ended. %s %d %s\n", __func__, __FILENAME__, __LINE__, __func__);
 
@@ -469,7 +469,7 @@ VOID StopService()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ˆê’â~‚³‚ê‚½ƒT[ƒrƒX‚ğÄŠJ‚·‚é
+// ä¸€æ™‚åœæ­¢ã•ã‚ŒãŸã‚µãƒ¼ãƒ“ã‚¹ã‚’å†é–‹ã™ã‚‹
 ///////////////////////////////////////////////////////////////////////////////
 VOID ResumeService()
 {
@@ -480,7 +480,7 @@ VOID ResumeService()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒT[ƒrƒX‚ğˆê’â~‚·‚é
+// ã‚µãƒ¼ãƒ“ã‚¹ã‚’ä¸€æ™‚åœæ­¢ã™ã‚‹
 ///////////////////////////////////////////////////////////////////////////////
 VOID PauseService()
 {
@@ -491,7 +491,7 @@ VOID PauseService()
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒT[ƒrƒX–{—ˆ‚Ìˆ—
+// ã‚µãƒ¼ãƒ“ã‚¹æœ¬æ¥ã®å‡¦ç†
 ///////////////////////////////////////////////////////////////////////////////
 DWORD ServiceThread(LPDWORD param)
 {

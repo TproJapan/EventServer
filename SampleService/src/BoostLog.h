@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 #include <boost/log/trivial.hpp>
 #include <boost/log/expressions.hpp>
 #include <boost/log/sources/severity_logger.hpp>

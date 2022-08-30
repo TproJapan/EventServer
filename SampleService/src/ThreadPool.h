@@ -1,4 +1,4 @@
-#pragma once
+ï»¿#pragma once
 #include <boost/asio.hpp>
 #include <boost/thread.hpp>
 #include <boost/bind.hpp>
@@ -9,7 +9,7 @@ class ThreadPool
     boost::shared_ptr<boost::asio::io_service::work> work_;
     boost::thread_group group_;
 public:
-    //ƒRƒ“ƒXƒgƒ‰ƒNƒ^‚Ì’†‚æ‚èè‘O‚Åƒƒ“ƒo[•Ï”‚ğ‰Šú‰»‚µ‚½‚¢ê‡‚Íu:ƒƒ“ƒo[•Ï”v‚Ì‘‚«•û‚ğ‚·‚é
+    //ã‚³ãƒ³ã‚¹ãƒˆãƒ©ã‚¯ã‚¿ã®ä¸­ã‚ˆã‚Šæ‰‹å‰ã§ãƒ¡ãƒ³ãƒãƒ¼å¤‰æ•°ã‚’åˆæœŸåŒ–ã—ãŸã„å ´åˆã¯ã€Œ:ãƒ¡ãƒ³ãƒãƒ¼å¤‰æ•°ã€ã®æ›¸ãæ–¹ã‚’ã™ã‚‹
     ThreadPool(boost::asio::io_service& io_service, std::size_t size)
         : io_service_(io_service)
     {

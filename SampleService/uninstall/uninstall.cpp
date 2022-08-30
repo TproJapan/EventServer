@@ -1,6 +1,6 @@
-#ifndef __GNUC__
+ï»¿#ifndef __GNUC__
 ///////////////////////////////////////////////////////////////////////////////
-// ƒT[ƒrƒX‚ÌƒAƒ“ƒCƒ“ƒXƒg[ƒ‹ƒvƒƒOƒ‰ƒ€ƒTƒ“ƒvƒ‹
+// ã‚µãƒ¼ãƒ“ã‚¹ã®ã‚¢ãƒ³ã‚¤ãƒ³ã‚¹ãƒˆãƒ¼ãƒ«ãƒ—ãƒ­ã‚°ãƒ©ãƒ ã‚µãƒ³ãƒ—ãƒ«
 ///////////////////////////////////////////////////////////////////////////////
 #include <windows.h>
 #include <iostream>
@@ -8,19 +8,19 @@
 using namespace std;
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒvƒƒgƒ^ƒCƒvéŒ¾
+// ãƒ—ãƒ­ãƒˆã‚¿ã‚¤ãƒ—å®£è¨€
 ///////////////////////////////////////////////////////////////////////////////
 void ErrorHandler(const char* s, DWORD err);
 
 
 #define SERVICE_NAME  L"SampleService"
 #define SERVICE_DIPLAY_NAME  L"SampleServ"
-#define SERVICE_DETAIL  L"ƒeƒXƒg—p‚ÌƒT[ƒrƒX‚Å‚·"
+#define SERVICE_DETAIL  L"ãƒ†ã‚¹ãƒˆç”¨ã®ã‚µãƒ¼ãƒ“ã‚¹ã§ã™"
 //#define SERVICE_EXE_FILEPATH  L"C:\\Users\\zx9y-\\source\\repos\\SampleService\\x64\\Debug\\SampleService.exe"
 #define SERVICE_EXE_FILEPATH  L"C:\\Users\\suguru.tateda\\VSProjects\\EventServer\\SampleService\\x64\\Debug\\SampleService.exe"
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒƒCƒ“ˆ—
+// ãƒ¡ã‚¤ãƒ³å‡¦ç†
 // uninstall SampleService
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
@@ -30,66 +30,66 @@ int main(int argc, char* argv[])
 	BOOL		success;
 	SERVICE_STATUS	status;
 
-	cout << "íœ‚ğŠJn‚µ‚Ü‚·...\n";
+	cout << "å‰Šé™¤ã‚’é–‹å§‹ã—ã¾ã™...\n";
 
-	// SCM‚Ö‚ÌÚ‘±‚ğŠJ‚­
+	// SCMã¸ã®æ¥ç¶šã‚’é–‹ã
 	scm = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
 	if (!scm)
 	{
-		ErrorHandler("OpenSCManager‚ÅƒGƒ‰[‚ª”­¶", GetLastError());
+		ErrorHandler("OpenSCManagerã§ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿ", GetLastError());
 		return -1;
 	}
 
-	// ƒT[ƒrƒX‚Ìƒnƒ“ƒhƒ‹‚ğæ“¾‚·‚é
+	// ã‚µãƒ¼ãƒ“ã‚¹ã®ãƒãƒ³ãƒ‰ãƒ«ã‚’å–å¾—ã™ã‚‹
 	service = OpenService(scm, SERVICE_NAME, SERVICE_ALL_ACCESS | DELETE);
 	if (!service)
 	{
-		ErrorHandler("OpenService‚ÅƒGƒ‰[‚ª”­¶", GetLastError());
+		ErrorHandler("OpenServiceã§ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿ", GetLastError());
 	}
 
-	// •K—v‚È‚çƒT[ƒrƒX‚ğ’â~‚·‚é
+	// å¿…è¦ãªã‚‰ã‚µãƒ¼ãƒ“ã‚¹ã‚’åœæ­¢ã™ã‚‹
 	success = QueryServiceStatus(service, &status);
 	if (!success)
 	{
-		ErrorHandler("QueryServiceStatus‚ÅƒGƒ‰[‚ª”­¶", GetLastError());
+		ErrorHandler("QueryServiceStatusã§ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿ", GetLastError());
 	}
 
 	if (status.dwCurrentState != SERVICE_STOPPED)
 	{
-		cout << "ƒT[ƒrƒX‚ğ’â~‚µ‚Ü‚·...\n";
+		cout << "ã‚µãƒ¼ãƒ“ã‚¹ã‚’åœæ­¢ã—ã¾ã™...\n";
 
 		success = ControlService(service, SERVICE_CONTROL_STOP, &status);
 		if (!success)
 		{
-			ErrorHandler("ControlService‚ÅƒGƒ‰[‚ª”­¶", GetLastError());
+			ErrorHandler("ControlServiceã§ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿ", GetLastError());
 		}
 		Sleep(5000);
 	}
 
-	// ƒT[ƒrƒX‚ğíœ‚·‚é
+	// ã‚µãƒ¼ãƒ“ã‚¹ã‚’å‰Šé™¤ã™ã‚‹
 	success = DeleteService(service);
 	if (!success)
 	{
-		ErrorHandler("DeleteService‚ÅƒGƒ‰[‚ª”­¶", GetLastError());
+		ErrorHandler("DeleteServiceã§ã‚¨ãƒ©ãƒ¼ãŒç™ºç”Ÿ", GetLastError());
 	}
 
-	cout << "ƒT[ƒrƒX‚ğíœ‚µ‚Ü‚µ‚½\n";
+	cout << "ã‚µãƒ¼ãƒ“ã‚¹ã‚’å‰Šé™¤ã—ã¾ã—ãŸ\n";
 
-	// ƒNƒŠ[ƒ“ƒAƒbƒv
+	// ã‚¯ãƒªãƒ¼ãƒ³ã‚¢ãƒƒãƒ—
 	CloseServiceHandle(service);
 	CloseServiceHandle(scm);
 
-	cout << "íœ‚ğI—¹‚µ‚Ü‚·...\n";
+	cout << "å‰Šé™¤ã‚’çµ‚äº†ã—ã¾ã™...\n";
 	return 0;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
-// ƒGƒ‰[ƒnƒ“ƒhƒ‰[
+// ã‚¨ãƒ©ãƒ¼ãƒãƒ³ãƒ‰ãƒ©ãƒ¼
 ///////////////////////////////////////////////////////////////////////////////
 void ErrorHandler(const char* s, DWORD err)
 {
 	cout << s << endl;
-	cout << "ƒGƒ‰[”Ô†: " << err << endl;
+	cout << "ã‚¨ãƒ©ãƒ¼ç•ªå·: " << err << endl;
 	ExitProcess(err);
 }
 #endif

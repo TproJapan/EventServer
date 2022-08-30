@@ -1,12 +1,12 @@
 ﻿#include "Func.h"
 
-int Change_File(char* fileName, 
+int changeFile(char* fileName, 
     char* includePath, 
     char* libraryPath,
     std::string& newFileContent) {
     FILE* fp;
 
-    char source_ch[BUFSIZE] = {};
+    char sourceCh[BUFSIZE] = {};
 
     if ((fp = fopen(fileName, "r")) == NULL) {
         std::printf("Failed to open rb mode vcproj!\n");
@@ -15,10 +15,10 @@ int Change_File(char* fileName,
     }
 
     //pick up every line
-    while (fgets(source_ch, BUFSIZE, fp) != NULL)
+    while (fgets(sourceCh, BUFSIZE, fp) != NULL)
     {
         //update include path
-        char* result = strstr(source_ch, "<AdditionalIncludeDirectories>");
+        char* result = strstr(sourceCh, "<AdditionalIncludeDirectories>");
         if (result != NULL)
         {
             newFileContent += "<AdditionalIncludeDirectories>";
@@ -28,7 +28,7 @@ int Change_File(char* fileName,
         }
 
         //update library path
-        result = strstr(source_ch, "<AdditionalLibraryDirectories>");
+        result = strstr(sourceCh, "<AdditionalLibraryDirectories>");
         if (result != NULL)
         {
             newFileContent += "<AdditionalLibraryDirectories>";
@@ -38,13 +38,13 @@ int Change_File(char* fileName,
         }
 
         //replace preprocessor definition expression
-        result = strstr(source_ch, "(PreprocessorDefinitions)");
+        result = strstr(sourceCh, "(PreprocessorDefinitions)");
         if (result != NULL)
         {
-            replace(source_ch, "(PreprocessorDefinitions)", "%(PreprocessorDefinitions)");
+            replace(sourceCh, "(PreprocessorDefinitions)", "%(PreprocessorDefinitions)");
         }
         
-        newFileContent += std::string(source_ch);
+        newFileContent += std::string(sourceCh);
     }
 
     //std::cout << *newFileContent << std::endl;
@@ -93,7 +93,7 @@ char* replace(char* s, const char* before, const char* after)
     return s;
 }
 
-int Save_File(char* file_In, const char* content) {
+int saveFile(char* file_In, const char* content) {
     FILE* fp;
 
     //check exist
