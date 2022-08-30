@@ -1,9 +1,9 @@
 #include "BoostLog.h"
 
 ///////////////////////////////////////////////////////////////////////////////
-// write_log
+// writeLog
 ///////////////////////////////////////////////////////////////////////////////
-bool write_log(int level, const char* message, ...)
+bool writeLog(int level, const char* message, ...)
 {
     va_list ap;
     char* allocBuf;
@@ -42,17 +42,17 @@ void init(int level, const char* log_dir, const char* log_filename)
 {
     namespace expr = boost::log::expressions;
 
-    char file_name[1024];
+    char fileName[1024];
 #ifdef _WIN64
-    sprintf_s(file_name, "%s\\%s", log_dir, log_filename);
+    sprintf_s(fileName, "%s\\%s", log_dir, log_filename);
 #else
-    sprintf(file_name, "%s/%s", log_dir, log_filename);
+    sprintf(fileName, "%s/%s", log_dir, log_filename);
 #endif
 
     logging::add_file_log
     (
         keywords::open_mode = (std::ios::out | std::ios::app),
-        keywords::file_name = file_name,
+        keywords::file_name = fileName,
         keywords::rotation_size = 1024 * 1024,
         keywords::time_based_rotation = sinks::file::rotation_at_time_point(0, 0, 0),
         //keywords::time_based_rotation = sinks::file::rotation_at_time_interval(boost::posix_time::seconds(30)),

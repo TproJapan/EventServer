@@ -8,7 +8,7 @@
 #include "TcpCommon.h"
 #include "ConnectClient.h"
 
-typedef std::vector<ConnectClient*> connectclient_vector;
+typedef std::vector<ConnectClient*> connectClientVector;
 
 class TcpServer {
 public:
@@ -22,7 +22,7 @@ public:
 #endif
 	SOCKET srcSocket;// ソケット(listen用)
 	boost::asio::io_service io_service;
-	thread_pool tp;
+	ThreadPool tp;
 	int nPortNo;
 	struct sockaddr_in srcAddr;
 
@@ -32,10 +32,10 @@ public:
 	int Func();
 	int Terminate();
 	void StopTcpServer();
-	int cleanupConnectClientVec(connectclient_vector& vec);
-	bool acceptHandler(SOCKET& sock, thread_pool& tp);
+	int cleanupConnectClientVec(connectClientVector& vec);
+	bool acceptHandler(SOCKET& sock, ThreadPool& tp);
 #ifndef _WIN64
-	static void sigalrm_handler(int signo, thread_pool _tp);
+	static void sigalrm_handler(int signo, ThreadPool _tp);
 	static void sigusr2_handler(int signo);
 #endif
 };

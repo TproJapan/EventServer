@@ -25,15 +25,15 @@
 #include "BoostLog.h"
 #endif
 
-int GetServerStatus() {
-	std::lock_guard<std::mutex> lock(server_status_Mutex);
-	return server_status;
+int getServerStatus() {
+	std::lock_guard<std::mutex> lock(serverStatusMutex);
+	return serverStatus;
 }
 
 #ifndef _WIN64
-int SetServerStatus(int status) {
-	std::lock_guard<std::mutex> lock(server_status_Mutex);
-	server_status = status;
-	return server_status;
+int setServerStatus(int status) {
+	std::lock_guard<std::mutex> lock(serverStatusMutex);
+	serverStatus = status;
+	return serverStatus;
 }
 #endif

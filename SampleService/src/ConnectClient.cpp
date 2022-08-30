@@ -17,7 +17,7 @@
 
 ConnectClient::~ConnectClient()
 {
-	write_log(2, "destructor started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);//konishi
+	writeLog(2, "destructor started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);//konishi
 	if (_socket != INVALID_SOCKET) 
 	{
 #ifdef _WIN64
@@ -30,9 +30,9 @@ ConnectClient::~ConnectClient()
 
 ConnectClient::ConnectClient(SOCKET dstSocket)
 {
-	write_log(2, "constructor started. dstSocket=%d, %s %d %s\n", dstSocket, __FILENAME__, __LINE__, __func__);//konishi
+	writeLog(2, "constructor started. dstSocket=%d, %s %d %s\n", dstSocket, __FILENAME__, __LINE__, __func__);
 	_socket = dstSocket;
-	_live = true;
+	live = true;
 }
 
 
@@ -42,19 +42,19 @@ ConnectClient::ConnectClient(SOCKET dstSocket)
 void ConnectClient::func()
 {
 #ifndef _WIN64
-	write_log(2, "func started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "func started. _socket=%d, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 
 	while (1) {
 		//終了確認
-		if (GetServerStatus() == 1) {
-			write_log(2, "Thread:%sを終了します, %s %d %s\n", std::this_thread::get_id(), __FILENAME__, __LINE__, __func__);
+		if (getServerStatus() == 1) {
+			writeLog(2, "Thread:%sを終了します, %s %d %s\n", std::this_thread::get_id(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		///////////////////////////////////
 		// 通信
 		///////////////////////////////////
-		write_log(2, "client(%d)クライアントとの通信を開始します, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+		writeLog(2, "client(%d)クライアントとの通信を開始します, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 		size_t stSize;
 		char buf[1024];
 
@@ -80,12 +80,12 @@ void ConnectClient::func()
 			}
 			else {
 				// selectが異常終了
-				write_log(4, "select error. errno=%d, %s %d %s\n", errno, __FILENAME__, __LINE__, __func__);// konishi
+				writeLog(4, "select error. errno=%d, %s %d %s\n", errno, __FILENAME__, __LINE__, __func__);// konishi
 				break;
 			}
 		}
 		else if (nRet == 0) {
-			write_log(2, "workerスレッドでタイムアウト発生, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "workerスレッドでタイムアウト発生, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
@@ -93,15 +93,15 @@ void ConnectClient::func()
 		recvHandler();
 	}
 	//while抜けたらフラグ倒す
-	std::lock_guard<std::mutex> lk(m_mutex);
-	_live = false;
+	std::lock_guard<std::mutex> lk(mMutex);
+	live = false;
 #else
 	HANDLE tmpEvent = WSACreateEvent();
 
 	//socketとイベント変数を、どの観点のイベントで反応させるかを紐づけ
 	int nRet = WSAEventSelect(_socket, tmpEvent, FD_READ | FD_CLOSE);
 	if (nRet == SOCKET_ERROR) {
-		write_log(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return;
 	}
 
@@ -112,12 +112,12 @@ void ConnectClient::func()
 
 	while (1) {
 		//サーバーステータスチェック
-		if (GetServerStatus() == 1) break;
+		if (getServerStatus() == 1) break;
 
 		//強制終了用のinterruption_pointを張る
 		boost::this_thread::interruption_point();
 
-		write_log(2, "書き込みを待っています.,%s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(2, "書き込みを待っています.,%s %d %s\n", __FILENAME__, __LINE__, __func__);
 		DWORD worker_dwTimeout = TIMEOUT_MSEC;
 
 		//イベント多重待ち
@@ -128,16 +128,16 @@ void ConnectClient::func()
 			FALSE);
 		if (worker_nRet == WSA_WAIT_FAILED)
 		{
-			write_log(5, "WSAWaitForMultipleEvents wait error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+			writeLog(5, "WSAWaitForMultipleEvents wait error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		if (worker_nRet == WSA_WAIT_TIMEOUT) {
-			write_log(2, "タイムアウト発生です!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "タイムアウト発生です!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
-		write_log(2, "WSAWaitForMultipleEvents nRet=%ld, %s %d %s\n", worker_nRet, __FILENAME__, __LINE__, __func__);
+		writeLog(2, "WSAWaitForMultipleEvents nRet=%ld, %s %d %s\n", worker_nRet, __FILENAME__, __LINE__, __func__);
 
 		// イベントを検知したHANDLE
 		HANDLE workerHandle = workerEventList[worker_nRet];
@@ -146,7 +146,7 @@ void ConnectClient::func()
 		WSANETWORKEVENTS events;
 		if (WSAEnumNetworkEvents(_socket, workerHandle, &events) == SOCKET_ERROR)
 		{
-			write_log(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+			writeLog(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -178,10 +178,10 @@ void ConnectClient::func()
 	closeAndInvalidateHandle(tmpEvent);
 
 	//while抜けたらフラグ倒す
-	std::lock_guard<std::mutex> lk(m_mutex);
-	_live = false;
+	std::lock_guard<std::mutex> lk(mMutex);
+	live = false;
 
-	write_log(2, "Finished Thead, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "Finished Thead, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 #endif
 }
 
@@ -194,12 +194,12 @@ bool ConnectClient::recvHandler(HANDLE& hEvent)
 bool ConnectClient::recvHandler()
 #endif
 {
-	write_log(2, "クライアント(%ld)からデータを受信, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "クライアント(%ld)からデータを受信, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 	char buf[1024];
 	int stSize = recv(_socket, buf, sizeof(buf), 0);
 	if (stSize <= 0) {
-		write_log(4, "recv error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
-		write_log(4, "クライアント(%ld)との接続が切れました, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+		writeLog(4, "recv error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "クライアント(%ld)との接続が切れました, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 #ifdef _WIN64
 		deleteConnection(hEvent);
 #else
@@ -210,7 +210,7 @@ bool ConnectClient::recvHandler()
 		return true;
 	}
 
-	write_log(2, "変換前:[%s] ==> %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "変換前:[%s] ==> %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 
 	for (int i = 0; i < (int)stSize; i++) { // bufの中の小文字を大文字に変換
 		if (isalpha(buf[i])) {
@@ -222,8 +222,8 @@ bool ConnectClient::recvHandler()
 	stSize = send(_socket, buf, strlen(buf) + 1, 0);
 
 	if (stSize != strlen(buf) + 1) {
-		write_log(4, "send error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
-		write_log(4, "クライアントとの接続が切れました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "send error., %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "クライアントとの接続が切れました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 #ifdef _WIN64
 		deleteConnection(hEvent);
 #else
@@ -234,7 +234,7 @@ bool ConnectClient::recvHandler()
 		return true;
 	}
 
-	write_log(2, "変換後:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "変換後:[%s] , %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 	return true;
 }
 
@@ -244,7 +244,7 @@ bool ConnectClient::recvHandler()
 ///////////////////////////////////////////////////////////////////////////////
 bool ConnectClient::closeHandler(HANDLE& hEvent)
 {
-	write_log(4, "クライアント(%d)との接続が切れました, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
+	writeLog(4, "クライアント(%d)との接続が切れました, %s %d %s\n", _socket, __FILENAME__, __LINE__, __func__);
 	deleteConnection(hEvent);
 	return true;
 }

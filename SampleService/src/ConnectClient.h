@@ -9,8 +9,8 @@ typedef int SOCKET;
 ///////////////////////////////////////////////////////////////////////////////
 class ConnectClient {
 public:
-	bool _live;//生存管理フラグ
-	std::mutex	m_mutex;//生存管理フラグ用排他
+	bool live;//生存管理フラグ
+	std::mutex	mMutex;//生存管理フラグ用排他
 	~ConnectClient();
 	void func();
 private:

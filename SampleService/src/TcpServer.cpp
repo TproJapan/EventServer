@@ -40,7 +40,7 @@
 #include <pthread.h>
 #endif
 
-connectclient_vector connectclient_vec;
+connectClientVector connectclient_vec;
 
 #ifndef _WIN64
 #define SOCKET_ERROR	(-1)
@@ -68,14 +68,14 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 		(LPSECURITY_ATTRIBUTES)NULL);	// セキュリティ属性
 
 	if (hPipe == INVALID_HANDLE_VALUE) {
-		write_log(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 
 	memset(&overlappedConnect, 0, sizeof(overlappedConnect));
 	eventConnect = CreateEvent(0, FALSE, FALSE, 0);
 	if (eventConnect == INVALID_HANDLE_VALUE) {
-		write_log(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 		throw - 2;
 	}
 
@@ -86,7 +86,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	// (実際の接続確認はWSAWaitForMultipleEvents, GetOverlappedResultで行う)
 	bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
 	if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {
-		write_log(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 		throw - 3;
 	}
 
@@ -94,7 +94,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	wVersionRequested = MAKEWORD(2, 0);
 	WSADATA	WsaData;
 	if (WSAStartup(wVersionRequested, &WsaData) != 0) {
-		write_log(5, "WSAStartup() error. code=%d, %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "WSAStartup() error. code=%d, %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		throw - 4;
 	}
 #else
@@ -113,17 +113,17 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	int nRet = 0;
 
 	//シグナルマスクの初期化
-	write_log(4, "before sigemptyset, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(4, "before sigemptyset, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	nRet = sigemptyset(&sigset);
 	if (nRet != 0) throw - 1;
 
 	//Control-C(SIGINT)で割り込まれないようにする
-	write_log(4, "before sigaddset, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(4, "before sigaddset, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	nRet = sigaddset(&sigset, SIGINT);
 	if (nRet != 0) throw - 1;
 	act.sa_mask = sigset;
 
-	write_log(4, "Before sigaction, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(4, "Before sigaction, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	///////////////////////////////////
 	// SIGALRM捕捉
 	///////////////////////////////////
@@ -132,7 +132,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	//第3引数は第1引数で指定したシステムコールでこれまで呼び出されていたアクションが格納される。NULLだとこれまでの動作が破棄される
 	nRet = sigaction(SIGALRM, &act, NULL);
 	if (nRet == -1) {
-		write_log(4, "sigaction(sigalrm) error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "sigaction(sigalrm) error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 
@@ -143,7 +143,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	act.sa_handler = sigusr2_handler;
 	nRet = sigaction(SIGUSR2, &act, NULL);
 	if (nRet == -1) {
-		write_log(4, "sigaction(sigalrm2) error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "sigaction(sigalrm2) error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 #endif
@@ -155,7 +155,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	// ソケットの生成(listen用)
 	srcSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (srcSocket == -1) {
-		write_log(5, "socket error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(5, "socket error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		throw - 5;
 	}
 
@@ -163,7 +163,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 #ifdef _WIN64
 	hEvent = WSACreateEvent();
 	if (hEvent == INVALID_HANDLE_VALUE) {
-		write_log(5, "WSACreateEvent error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(5, "WSACreateEvent error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		throw - 6;
 	}
 
@@ -172,7 +172,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	nRet = WSAEventSelect(srcSocket, hEvent, FD_ACCEPT);
 	if (nRet == SOCKET_ERROR)
 	{
-		write_log(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		WSACleanup();
 		throw - 7;
 	}
@@ -180,7 +180,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	const int on = 1;
 	nRet = setsockopt(srcSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 	if (nRet == -1) {
-		write_log(4, "setsockopt error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "setsockopt error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 #endif
@@ -198,9 +198,9 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	nRet = bind(srcSocket, (struct sockaddr*)&srcAddr, sizeof(srcAddr));
 	if (nRet == SOCKET_ERROR) {
 #ifdef _WIN64
-		write_log(5, "bind error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "bind error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 #else
-		write_log(4, "bind error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "bind error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 #endif
 		throw - 8;
 	}
@@ -208,7 +208,7 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	// クライアントからの接続待ち
 	nRet = listen(srcSocket, 1);
 	if (nRet == SOCKET_ERROR) {
-		write_log(4, "listen error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "listen error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 }
@@ -235,14 +235,14 @@ TcpServer::~TcpServer()
 		bool result = connectclient_vec.empty();
 
 		if (result == true) {
-			write_log(2, "connectclient_vecがempty。ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "connectclient_vecがempty。ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		count--;
 
 		if (count <= 0) {
-			write_log(2, "タイムアップ。connectclient_vec残%d。強制終了します%s %d %s\n", connectclient_vec.size(), __FILENAME__, __LINE__, __func__);
+			writeLog(2, "タイムアップ。connectclient_vec残%d。強制終了します%s %d %s\n", connectclient_vec.size(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -253,7 +253,7 @@ TcpServer::~TcpServer()
 	WSACleanup();
 
 	//printf("終了しました\n");
-	write_log(2, "Tcpサーバー停止処理を終了しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "Tcpサーバー停止処理を終了しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	//サービス側に終了を知らせる
 	SetEvent(TcpServerMainEnd);
@@ -264,32 +264,32 @@ TcpServer::~TcpServer()
 	// 接続待ちソケットのクローズ
 	nRet = close(srcSocket);
 	if (nRet == -1) {
-		write_log(4, "close error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "close error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	}
 
-	SetServerStatus(1);
+	setServerStatus(1);
 
 	//sigalerm発行
 	alarm(60);
-	write_log(2, "alarmがセットされました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "alarmがセットされました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	int past_seconds = 0;
 
 	while (1) {
 		sleep(2);
 		past_seconds += 2;
-		write_log(2, "%d秒経過しました, %s %d %s\n", past_seconds, __FILENAME__, __LINE__, __func__);
+		writeLog(2, "%d秒経過しました, %s %d %s\n", past_seconds, __FILENAME__, __LINE__, __func__);
 
 		// Vectorのゴミ掃除
 		cleanupConnectClientVec(connectclient_vec);
 		bool result = connectclient_vec.empty();
 		if (result == true) {
-			write_log(2, "ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			break;
 		}
 	}
 
-	write_log(2, "正常終了します, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "正常終了します, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 #endif
 }
@@ -298,19 +298,19 @@ TcpServer::~TcpServer()
 bool main_thread_flag = true;
 
 
-void TcpServer::sigalrm_handler(int signo, thread_pool _tp)
+void TcpServer::sigalrm_handler(int signo, ThreadPool _tp)
 {
-	write_log(2, "sig_handler started. signo=%d, %s %d %s\n", signo, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "sig_handler started. signo=%d, %s %d %s\n", signo, __FILENAME__, __LINE__, __func__);
 	//ワーカースレッド強制終了します
 	_tp.terminateAllThreads();
-	write_log(2, "ワーカースレッド強制終了しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "ワーカースレッド強制終了しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	return;
 }
 
 void TcpServer::sigusr2_handler(int signo) {
-	write_log(2, "sig_handler started. signo=%d, %s %d %s\n", signo, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "sig_handler started. signo=%d, %s %d %s\n", signo, __FILENAME__, __LINE__, __func__);
 	main_thread_flag = false;
-	write_log(2, "main_thread_flagを書き換えました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "main_thread_flagを書き換えました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	return;
 }
 
@@ -338,7 +338,7 @@ int TcpServer::Func() {
 		tval.tv_usec = SELECT_TIMER_USEC;	// suseconds_t  マイクロ秒
 
 		//printf("新規接続とクライアントから書き込みを待っています.\n");	
-		write_log(2, "新規接続とクライアントから書き込みを待っています, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(2, "新規接続とクライアントから書き込みを待っています, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 		//msgrsv:引数でmsgflg に IPC_NOWAIT
 
@@ -360,12 +360,12 @@ int TcpServer::Func() {
 			}
 			else {
 				// selectが異常終了
-				write_log(4, "select error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				writeLog(4, "select error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 				exit(1);
 			}
 		}
 		else if (nRet == 0) {
-			write_log(2, "selectでタイムアウト発生, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "selectでタイムアウト発生, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
@@ -384,17 +384,17 @@ int TcpServer::Func() {
 	return(0);
 }
 
-int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
+int TcpServer::cleanupConnectClientVec(connectClientVector& vec)
 {
 	int deleteCount = 0;
-	write_log(2, "*** ゴミ掃除開始 ***, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "*** ゴミ掃除開始 ***, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 	auto it = vec.begin();
 	while (it != vec.end()) {
-		std::lock_guard<std::mutex> lk((*it)->m_mutex);
-		write_log(2, "*** h=%p, flag=%d, %s %d %s\n", *it, (*it)->_live, __FILENAME__, __LINE__, __func__);
-		if ((*it)->_live == false) {
-			write_log(2, "*** h=%p deleted, %s %d %s\n", *it, __FILENAME__, __LINE__, __func__);
+		std::lock_guard<std::mutex> lk((*it)->mMutex);
+		writeLog(2, "*** h=%p, flag=%d, %s %d %s\n", *it, (*it)->live, __FILENAME__, __LINE__, __func__);
+		if ((*it)->live == false) {
+			writeLog(2, "*** h=%p deleted, %s %d %s\n", *it, __FILENAME__, __LINE__, __func__);
 			delete* it;
 			it = vec.erase(it);
 			deleteCount++;
@@ -404,7 +404,7 @@ int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 		}
 	}
 
-	write_log(2, "*** deleteCount = %d ***, %s %d %s\n", deleteCount, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "*** deleteCount = %d ***, %s %d %s\n", deleteCount, __FILENAME__, __LINE__, __func__);
 	return deleteCount;
 }
 #else
@@ -413,8 +413,8 @@ int TcpServer::Func() {
 	int nRet;
 
 	while (1) {
-		if (GetServerStatus() == 1) {
-			write_log(2, "メインループを抜けます., %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		if (getServerStatus() == 1) {
+			writeLog(2, "メインループを抜けます., %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -428,29 +428,29 @@ int TcpServer::Func() {
 		eventList[1] = eventConnect;//名前付きパイプ
 
 		//printf("新規接続を待っています.\n");
-		write_log(2, "新規接続を待っています., %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(2, "新規接続を待っています., %s %d %s\n", __FILENAME__, __LINE__, __func__);
 		DWORD dwTimeout = TIMEOUT_MSEC;
 
 		nRet = WSAWaitForMultipleEvents(mainEventNum, eventList, FALSE, dwTimeout, FALSE);
 		if (nRet == WSA_WAIT_FAILED)
 		{
-			write_log(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+			writeLog(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		if (nRet == WSA_WAIT_TIMEOUT) {
-			write_log(2, "タイムアウト発生!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "タイムアウト発生!!!, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			continue;
 		}
 
-		write_log(2, "WSAWaitForMultipleEvents nRet=%ld, %s %d %s\n", nRet, __FILENAME__, __LINE__, __func__);
+		writeLog(2, "WSAWaitForMultipleEvents nRet=%ld, %s %d %s\n", nRet, __FILENAME__, __LINE__, __func__);
 
 		// イベントを検知したHANDLE
 		HANDLE mainHandle = eventList[nRet];
 
 		//ハンドル書き込み検出
 		if (mainHandle == eventConnect) {
-			write_log(2, "パイプに接続要求を受けました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "パイプに接続要求を受けました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 
 			DWORD byteTransfer;
 			DWORD NumBytesRead;
@@ -458,10 +458,10 @@ int TcpServer::Func() {
 			BOOL bRet;
 
 			bRet = GetOverlappedResult(mainHandle, &overlappedConnect, &byteTransfer, TRUE);
-			write_log(2, "GetOverlappedResult bRet = %ld, %s %d %s\n", bRet, __FILENAME__, __LINE__, __func__);
+			writeLog(2, "GetOverlappedResult bRet = %ld, %s %d %s\n", bRet, __FILENAME__, __LINE__, __func__);
 
 			if (bRet != TRUE) {
-				write_log(5, "GetOverlappedResult error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				writeLog(5, "GetOverlappedResult error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 				break;
 			}
 			ResetEvent(mainHandle);
@@ -474,17 +474,17 @@ int TcpServer::Func() {
 				&NumBytesRead,
 				(LPOVERLAPPED)NULL);
 			if (bRet != TRUE) {
-				write_log(5, "ReadFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				writeLog(5, "ReadFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 				break;
 			}
 
-			write_log(2, "パイプクライアントと接続しました:[%s], %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
+			writeLog(2, "パイプクライアントと接続しました:[%s], %s %d %s\n", buf, __FILENAME__, __LINE__, __func__);
 
 			// 受信メッセージが "stop" の場合はTcpServerを停止
 			if (strcmp(buf, "stop") == 0) {
-				std::lock_guard<std::mutex> lk(server_status_Mutex);
-				server_status = 1;
-				write_log(2, "サーバ停止要求を受信しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				std::lock_guard<std::mutex> lk(serverStatusMutex);
+				serverStatus = 1;
+				writeLog(2, "サーバ停止要求を受信しました, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 			}
 
 			// パイプクライアントに応答メッセージを送信
@@ -493,7 +493,7 @@ int TcpServer::Func() {
 			bRet = WriteFile(hPipe, buf, (DWORD)strlen(buf) + 1,
 				&NumBytesWritten, (LPOVERLAPPED)NULL);
 			if (bRet != TRUE) {
-				write_log(5, "WriteFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				writeLog(5, "WriteFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 				break;
 			}
 
@@ -503,7 +503,7 @@ int TcpServer::Func() {
 			// 新たなパイプクライアントからの接続を待つ
 			bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
 			if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {
-				write_log(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+				writeLog(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
 				break;
 			}
 
@@ -514,7 +514,7 @@ int TcpServer::Func() {
 		WSANETWORKEVENTS mainEvents;
 		if (WSAEnumNetworkEvents(srcSocket, mainHandle, &mainEvents) == SOCKET_ERROR)
 		{
-			write_log(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+			writeLog(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -531,17 +531,17 @@ int TcpServer::Func() {
 
 void TcpServer::StopTcpServer()
 {
-	std::lock_guard<std::mutex> lk(server_status_Mutex);
-	server_status = 1;
+	std::lock_guard<std::mutex> lk(serverStatusMutex);
+	serverStatus = 1;
 }
 
 ///////////////////////////////////////////////////////////////////////////////
 // ソケット切断済みのconnect_clientの解放処理
 ///////////////////////////////////////////////////////////////////////////////
-int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
+int TcpServer::cleanupConnectClientVec(connectClientVector& vec)
 {
 	int deleteCount = 0;
-	write_log(2, "*** ゴミ掃除開始 ***, %s %d %s", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "*** ゴミ掃除開始 ***, %s %d %s", __FILENAME__, __LINE__, __func__);
 
 	auto it = vec.begin();
 	while (it != vec.end()) {
@@ -550,11 +550,11 @@ int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 			// lock_guradeがインスタンスのm_mutexを参照していると
 			// deleteで死んでしまうので、(*it)->_liveの内容を
 			// liveFlagにコピーしておく。
-			std::lock_guard<std::mutex> lk((*it)->m_mutex);
-			liveFlag = (*it)->_live;
+			std::lock_guard<std::mutex> lk((*it)->mMutex);
+			liveFlag = (*it)->live;
 		}
 
-		write_log(2, "*** h=%p, flag=%d, %s %d %s", *it, (*it)->_live, __FILENAME__, __LINE__, __func__);
+		writeLog(2, "*** h=%p, flag=%d, %s %d %s", *it, (*it)->live, __FILENAME__, __LINE__, __func__);
 		if (liveFlag == false) {
 			delete* it;
 			it = vec.erase(it);
@@ -565,7 +565,7 @@ int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 		}
 	}
 
-	write_log(2, "deleteCount = %d ***, %s %d %s", deleteCount, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "deleteCount = %d ***, %s %d %s", deleteCount, __FILENAME__, __LINE__, __func__);
 	return deleteCount;
 }
 #endif
@@ -573,19 +573,19 @@ int TcpServer::cleanupConnectClientVec(connectclient_vector& vec)
 ///////////////////////////////////////////////////////////////////////////////
 // クライアントから新規接続受付時のハンドラ
 ///////////////////////////////////////////////////////////////////////////////
-bool TcpServer::acceptHandler(SOCKET& sock, thread_pool& tp)
+bool TcpServer::acceptHandler(SOCKET& sock, ThreadPool& tp)
 {
-	write_log(2, "クライアント接続要求を受け付けました %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "クライアント接続要求を受け付けました %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	struct sockaddr_in dstAddr;
 	int addrlen = sizeof(dstAddr);
 
 	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, (socklen_t*)&addrlen);
 	if (newSock == -1) {
-		write_log(5, "accept error. (%ld) %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "accept error. (%ld) %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
 		return false;
 	}
 
-	write_log(2, "[%s]から接続を受けました. newSock=%d, %s %d %s\n", inet_ntoa(dstAddr.sin_addr), newSock, __FILENAME__, __LINE__, __func__);
+	writeLog(2, "[%s]から接続を受けました. newSock=%d, %s %d %s\n", inet_ntoa(dstAddr.sin_addr), newSock, __FILENAME__, __LINE__, __func__);
 	//プールスレッドにバインド
 	ConnectClient* h = new ConnectClient(newSock);
 	tp.post(boost::bind(&ConnectClient::func, h));

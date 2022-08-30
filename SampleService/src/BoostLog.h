@@ -29,7 +29,7 @@ namespace keywords = boost::log::keywords;
 
 //level;0(trace),1(debug),2(info),3(warning),4(error),5(fatal)
 void init(int level, const char* log_dir, const char* log_filename);
-bool write_log(int level, const char* message, ...);
+bool writeLog(int level, const char* message, ...);
 #ifdef _WIN64
 int _vasprintf(char** strp, const char* fmt, va_list ap);
 #endif
