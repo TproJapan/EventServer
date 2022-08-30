@@ -15,8 +15,8 @@ int main(int argc, char *argv[])
 	} 
 
     //ps aux | grep -e TcpServerで調べたプロセスidにSIGUSR2を送る
-    int target_pid = atoi(argv[1]);
-    kill(target_pid, SIGUSR2);
+    int targetPid = atoi(argv[1]);
+    kill(targetPid, SIGUSR2);
 
     return 0;
 }

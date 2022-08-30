@@ -20,7 +20,7 @@
 #include <netdb.h>
 using namespace std;
 
-int fd_start = -1;//立ち上がり完了報告用fd;
+int fdStart = -1;//立ち上がり完了報告用fd;
 int nbyte;
 char buff[256];
 int nRet;
@@ -38,16 +38,16 @@ int main(int argc, char* argv[])
 	struct servent* pServent = NULL;
 	pServent = getservbyname(name, protocol);
 	int port = 5000;//Default value
-	char port_buff[16];
+	char portBuff[16];
 
 	if (pServent == NULL) 
 	{
-		std::sprintf(port_buff, "%d", port);
-		printf("getservbyname error, uses %s for Port.\n", port_buff);
+		std::sprintf(portBuff, "%d", port);
+		printf("getservbyname error, uses %s for Port.\n", portBuff);
 	}else {
 		port = ntohs(pServent->s_port);
-		std::sprintf(port_buff, "%d", port);
-		printf("Uses %s for Port.\n", port_buff);
+		std::sprintf(portBuff, "%d", port);
+		printf("Uses %s for Port.\n", portBuff);
 	}
 
 	// 入力パイプの作成
@@ -66,30 +66,30 @@ int main(int argc, char* argv[])
 	////////////////////////
 
 	//StartコマンドプロセスID取得
-	pid_t r_pid = getpid();
-	char pid_buff[16];
-    //char port_buff[16];
+	pid_t rPid = getpid();
+	char pidBuff[16];
+    //char portBuff[16];
 
-	//strcpy(port_buff, argv[1]);
-    sprintf(pid_buff, "%d", r_pid);//文字列に変換
+	//strcpy(portBuff, argv[1]);
+    sprintf(pidBuff, "%d", rPid);//文字列に変換
 
 	// getcwd(CurrentPath, 256);
 
-	char TcpServerPath[256];//デーモン実行するサーバープログラムのパス
-	char SymbolicLink[256];//実行中のプロセスのシンボリックリンク
-	char AbsolutePath[256];//実行中のプログラム絶対パス
-	memset(TcpServerPath, 0, sizeof(TcpServerPath));
-	memset(SymbolicLink, 0, sizeof(SymbolicLink));
-	memset(AbsolutePath, 0, sizeof(AbsolutePath));
+	char tcpServerPath[256];//デーモン実行するサーバープログラムのパス
+	char symbolicLink[256];//実行中のプロセスのシンボリックリンク
+	char absolutePath[256];//実行中のプログラム絶対パス
+	memset(tcpServerPath, 0, sizeof(tcpServerPath));
+	memset(symbolicLink, 0, sizeof(symbolicLink));
+	memset(absolutePath, 0, sizeof(absolutePath));
 
-	snprintf(SymbolicLink, sizeof(SymbolicLink)-1, "/proc/%d/exe", r_pid);
-	readlink(SymbolicLink, AbsolutePath, sizeof(AbsolutePath));
+	snprintf(symbolicLink, sizeof(symbolicLink)-1, "/proc/%d/exe", rPid);
+	readlink(symbolicLink, absolutePath, sizeof(absolutePath));
 
-	eraseTail(AbsolutePath, sizeof("Start"));
-	// printf("AbsolutePath = [%s]\n", AbsolutePath);
-	sprintf(TcpServerPath, "%s%s",AbsolutePath, "/../build/ServerMain");
+	eraseTail(absolutePath, sizeof("Start"));
+	// printf("absolutePath = [%s]\n", absolutePath);
+	sprintf(tcpServerPath, "%s%s",absolutePath, "/../build/ServerMain");
 
-	char* const str[] = {(char*)"myServer", port_buff, pid_buff, NULL};
+	char* const str[] = {(char*)"myServer", portBuff, pidBuff, NULL};
 	pid_t pid = 0;
 	
 	pid = fork();
@@ -102,8 +102,8 @@ int main(int argc, char* argv[])
 	else if (pid == 0) //子プロセスには0が返る
 	{
 		//ToDo:renameat関数使ってリネームできそう
-		printf("TcpServerPath = [%s]\n", TcpServerPath);
-		nRet = execv(TcpServerPath, str);
+		printf("tcpServerPath = [%s]\n", tcpServerPath);
+		nRet = execv(tcpServerPath, str);
         if ( nRet == -1 ) 
 		{
 			printf("execv has failed in Start.cpp. errno=%d\n", errno);
@@ -113,7 +113,7 @@ int main(int argc, char* argv[])
 
 	//TcpServerプロセスから正常起動完了報告を名前付きパイプで受ける
     /* 読取専用でパイプを開く */
-    if ((fd_start = open(PIPE_START, O_RDONLY)) == -1)
+    if ((fdStart = open(PIPE_START, O_RDONLY)) == -1)
     {
 		closeStartPipe();
         return 1;
@@ -123,7 +123,7 @@ int main(int argc, char* argv[])
     bool flag = true;
 
     while (flag == true){
-        if((nbyte = read(fd_start, buff, sizeof(buff))) > 0){
+        if((nbyte = read(fdStart, buff, sizeof(buff))) > 0){
             write(fileno(stdout), buff, nbyte);
 			printf("\n");
             flag = false;
@@ -139,7 +139,7 @@ int main(int argc, char* argv[])
 }
 
 int closeStartPipe(){
-	if(close(fd_start) != 0) perror("close()\n");
+	if(close(fdStart) != 0) perror("close()\n");
     unlink(PIPE_START);
 	return(0);
 };
