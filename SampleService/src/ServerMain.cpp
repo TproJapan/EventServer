@@ -25,7 +25,7 @@
 #include "ConnectClient.h"
 #include <boost/asio.hpp>
 #include <boost/bind.hpp>
-#include "thread_pool.h"
+#include "ThreadPool.h"
 #include "TcpServer.h"
 #define MAXFD 64
 
