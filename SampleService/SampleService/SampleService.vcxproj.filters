@@ -41,7 +41,7 @@
     <ClInclude Include="..\src\ConnectClient.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
-    <ClInclude Include="..\src\thread_pool.h">
+    <ClInclude Include="..\src\Thread_pool.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
     <ClInclude Include="..\src\TcpServer.h">
