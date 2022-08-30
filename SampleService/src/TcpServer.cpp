@@ -7,7 +7,7 @@
 #include <errno.h>
 #include "BoostLog.h"
 #include <boost/asio.hpp>
-#include "thread_pool.h"
+#include "ThreadPool.h"
 #include "ConnectClient.h"
 
 #ifdef _WIN64
