@@ -68,14 +68,16 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 		(LPSECURITY_ATTRIBUTES)NULL);	// セキュリティ属性
 
 	if (hPipe == INVALID_HANDLE_VALUE) {
-		writeLog(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", GetLastError(), "CreateNamedPipe error.\n", __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 
 	memset(&overlappedConnect, 0, sizeof(overlappedConnect));
 	eventConnect = CreateEvent(0, FALSE, FALSE, 0);
 	if (eventConnect == INVALID_HANDLE_VALUE) {
-		writeLog(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "CreateNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", GetLastError(), "CreateNamedPipe error.\n", __FILENAME__, __LINE__, __func__);
 		throw - 2;
 	}
 
@@ -86,7 +88,8 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	// (実際の接続確認はWSAWaitForMultipleEvents, GetOverlappedResultで行う)
 	bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
 	if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {
-		writeLog(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", GetLastError(), "ConnectNamedPipe error.\n", __FILENAME__, __LINE__, __func__);
 		throw - 3;
 	}
 
@@ -94,7 +97,8 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	wVersionRequested = MAKEWORD(2, 0);
 	WSADATA	WsaData;
 	if (WSAStartup(wVersionRequested, &WsaData) != 0) {
-		writeLog(5, "WSAStartup() error. code=%d, %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "WSAStartup() error. code=%d, %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", WSAGetLastError(), "WSAStartup() error.\n", __FILENAME__, __LINE__, __func__);
 		throw - 4;
 	}
 #else
@@ -113,17 +117,17 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	int nRet = 0;
 
 	//シグナルマスクの初期化
-	writeLog(4, "before sigemptyset, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "SigAction:before sigemptyset, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	nRet = sigemptyset(&sigset);
 	if (nRet != 0) throw - 1;
 
 	//Control-C(SIGINT)で割り込まれないようにする
-	writeLog(4, "before sigaddset, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "SigAction:before sigaddset, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	nRet = sigaddset(&sigset, SIGINT);
 	if (nRet != 0) throw - 1;
 	act.sa_mask = sigset;
 
-	writeLog(4, "Before sigaction, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "SigAction:Before sigaction, %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	///////////////////////////////////
 	// SIGALRM捕捉
 	///////////////////////////////////
@@ -132,7 +136,8 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	//第3引数は第1引数で指定したシステムコールでこれまで呼び出されていたアクションが格納される。NULLだとこれまでの動作が破棄される
 	nRet = sigaction(SIGALRM, &act, NULL);
 	if (nRet == -1) {
-		writeLog(4, "sigaction(sigalrm) error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "sigaction(sigalrm) error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", errno, "sigaction(sigalrm) error.\n", __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 
@@ -143,7 +148,8 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	act.sa_handler = sigusr2_handler;
 	nRet = sigaction(SIGUSR2, &act, NULL);
 	if (nRet == -1) {
-		writeLog(4, "sigaction(sigalrm2) error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "sigaction(sigalrm2) error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", errno, "sigaction(sigalrm2) error.\n", __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 #endif
@@ -155,7 +161,12 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	// ソケットの生成(listen用)
 	srcSocket = socket(AF_INET, SOCK_STREAM, 0);
 	if (srcSocket == -1) {
-		writeLog(5, "socket error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "socket error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+#ifdef _WIN64
+		writeLog(5, "%ld:%s, %s %d %s\n", WSAGetLastError, "socket error.\n", __FILENAME__, __LINE__, __func__);
+#else
+		writeLog(5, "%ld:%s, %s %d %s\n", errno, "socket error.\n", __FILENAME__, __LINE__, __func__);
+#endif
 		throw - 5;
 	}
 
@@ -163,7 +174,8 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 #ifdef _WIN64
 	hEvent = WSACreateEvent();
 	if (hEvent == INVALID_HANDLE_VALUE) {
-		writeLog(5, "WSACreateEvent error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "WSACreateEvent error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", WSAGetLastError, "WSACreateEvent error.\n", __FILENAME__, __LINE__, __func__);
 		throw - 6;
 	}
 
@@ -172,7 +184,8 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	nRet = WSAEventSelect(srcSocket, hEvent, FD_ACCEPT);
 	if (nRet == SOCKET_ERROR)
 	{
-		writeLog(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "WSAEventSelect error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", WSAGetLastError, "WSAEventSelect error.\n", __FILENAME__, __LINE__, __func__);
 		WSACleanup();
 		throw - 7;
 	}
@@ -180,7 +193,8 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	const int on = 1;
 	nRet = setsockopt(srcSocket, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on));
 	if (nRet == -1) {
-		writeLog(4, "setsockopt error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "setsockopt error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", errno, "setsockopt error.\n", __FILENAME__, __LINE__, __func__);
 		throw - 1;
 	}
 #endif
@@ -198,9 +212,11 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	nRet = bind(srcSocket, (struct sockaddr*)&srcAddr, sizeof(srcAddr));
 	if (nRet == SOCKET_ERROR) {
 #ifdef _WIN64
-		writeLog(5, "bind error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "bind error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", WSAGetLastError(), "bind error.\n", __FILENAME__, __LINE__, __func__);
 #else
-		writeLog(4, "bind error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "bind error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", errno, "bind error.\n", __FILENAME__, __LINE__, __func__);
 #endif
 		throw - 8;
 	}
@@ -208,7 +224,12 @@ TcpServer::TcpServer(int portNo) :tp(io_service, CLIENT_MAX)
 	// クライアントからの接続待ち
 	nRet = listen(srcSocket, 1);
 	if (nRet == SOCKET_ERROR) {
-		writeLog(4, "listen error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "listen error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+#ifdef _WIN64
+		writeLog(4, "%ld:%s, %s %d %s\n", WSAGetLastError(), "listen error.\n", __FILENAME__, __LINE__, __func__);
+#else
+		writeLog(4, "%ld:%s, %s %d %s\n", errno, "listen error.\n", __FILENAME__, __LINE__, __func__);
+#endif
 		throw - 1;
 	}
 }
@@ -235,14 +256,14 @@ TcpServer::~TcpServer()
 		bool result = connectclient_vec.empty();
 
 		if (result == true) {
-			writeLog(2, "connectclient_vecがempty。ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "connectclient_vecis empty.Client Vector:%d %s %d %s\n", connectclient_vec.size(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
 		count--;
 
 		if (count <= 0) {
-			writeLog(2, "タイムアップ。connectclient_vec残%d。強制終了します%s %d %s\n", connectclient_vec.size(), __FILENAME__, __LINE__, __func__);
+			writeLog(2, "TimeUp. Finish Forcely. Client Vector:%d %s %d %s\n", connectclient_vec.size(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -264,7 +285,8 @@ TcpServer::~TcpServer()
 	// 接続待ちソケットのクローズ
 	nRet = close(srcSocket);
 	if (nRet == -1) {
-		writeLog(4, "close error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "close error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", errno, "close error.\n", __FILENAME__, __LINE__, __func__);
 	}
 
 	setServerStatus(1);
@@ -284,7 +306,7 @@ TcpServer::~TcpServer()
 		cleanupConnectClientVec(connectclient_vec);
 		bool result = connectclient_vec.empty();
 		if (result == true) {
-			writeLog(2, "ループを抜けます, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+			writeLog(2, "Exit loop. Client Vector:%d %s %d %s\n", connectclient_vec.size(), __FILENAME__, __LINE__, __func__);
 			break;
 		}
 	}
@@ -360,7 +382,8 @@ int TcpServer::Func() {
 			}
 			else {
 				// selectが異常終了
-				writeLog(4, "select error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				//writeLog(4, "select error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				writeLog(4, "%ld:%s, %s %d %s\n", errno, "select error.\n", __FILENAME__, __LINE__, __func__);
 				exit(1);
 			}
 		}
@@ -387,7 +410,7 @@ int TcpServer::Func() {
 int TcpServer::cleanupConnectClientVec(connectClientVector& vec)
 {
 	int deleteCount = 0;
-	writeLog(2, "*** ゴミ掃除開始 ***, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "*** ゴミ掃除開始 ***.Client Vector Size:%d, %s %d %s\n", vec.size(), __FILENAME__, __LINE__, __func__);
 
 	auto it = vec.begin();
 	while (it != vec.end()) {
@@ -434,7 +457,8 @@ int TcpServer::Func() {
 		nRet = WSAWaitForMultipleEvents(mainEventNum, eventList, FALSE, dwTimeout, FALSE);
 		if (nRet == WSA_WAIT_FAILED)
 		{
-			writeLog(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+			//writeLog(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+			writeLog(5, "%ld:%s, %s %d %s\n", WSAGetLastError(), "WSAWaitForMultipleEvents error.\n", __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -461,7 +485,8 @@ int TcpServer::Func() {
 			writeLog(2, "GetOverlappedResult bRet = %ld, %s %d %s\n", bRet, __FILENAME__, __LINE__, __func__);
 
 			if (bRet != TRUE) {
-				writeLog(5, "GetOverlappedResult error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				//writeLog(5, "GetOverlappedResult error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				writeLog(5, "%ld:%s, %s %d %s\n", GetLastError(), "GetOverlappedResult error.\n", __FILENAME__, __LINE__, __func__);
 				break;
 			}
 			ResetEvent(mainHandle);
@@ -474,7 +499,8 @@ int TcpServer::Func() {
 				&NumBytesRead,
 				(LPOVERLAPPED)NULL);
 			if (bRet != TRUE) {
-				writeLog(5, "ReadFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				//writeLog(5, "ReadFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				writeLog(5, "%ld:%s, %s %d %s\n", GetLastError(), "ReadFile error.\n", __FILENAME__, __LINE__, __func__);
 				break;
 			}
 
@@ -493,7 +519,8 @@ int TcpServer::Func() {
 			bRet = WriteFile(hPipe, buf, (DWORD)strlen(buf) + 1,
 				&NumBytesWritten, (LPOVERLAPPED)NULL);
 			if (bRet != TRUE) {
-				writeLog(5, "WriteFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				//writeLog(5, "WriteFile error, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+				writeLog(5, "%ld:%s, %s %d %s\n", GetLastError(), "WriteFile error.\n", __FILENAME__, __LINE__, __func__);
 				break;
 			}
 
@@ -503,7 +530,8 @@ int TcpServer::Func() {
 			// 新たなパイプクライアントからの接続を待つ
 			bRet = ConnectNamedPipe(hPipe, &overlappedConnect);
 			if (bRet == FALSE && GetLastError() != ERROR_IO_PENDING) {
-				writeLog(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+				//writeLog(5, "ConnectNamedPipe error. (%ld), %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+				writeLog(5, "%ld:%s, %s %d %s\n", GetLastError(), "ConnectNamedPipe error.\n", __FILENAME__, __LINE__, __func__);
 				break;
 			}
 
@@ -514,7 +542,8 @@ int TcpServer::Func() {
 		WSANETWORKEVENTS mainEvents;
 		if (WSAEnumNetworkEvents(srcSocket, mainHandle, &mainEvents) == SOCKET_ERROR)
 		{
-			writeLog(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+			//writeLog(5, "WSAWaitForMultipleEvents error. (%ld), %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+			writeLog(5, "%ld:%s, %s %d %s\n", WSAGetLastError(), "WSAWaitForMultipleEvents error.\n", __FILENAME__, __LINE__, __func__);
 			break;
 		}
 
@@ -581,7 +610,8 @@ bool TcpServer::acceptHandler(SOCKET& sock, ThreadPool& tp)
 
 	SOCKET newSock = accept(sock, (struct sockaddr*)&dstAddr, (socklen_t*)&addrlen);
 	if (newSock == -1) {
-		writeLog(5, "accept error. (%ld) %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(5, "accept error. (%ld) %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(5, "%ld:%s, %s %d %s\n", WSAGetLastError(), "accept error.\n", __FILENAME__, __LINE__, __func__);
 		return false;
 	}
 

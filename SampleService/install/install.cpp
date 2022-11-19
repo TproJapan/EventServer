@@ -33,7 +33,8 @@ int main(int argc, char* argv[])
 	scm = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
 	if (!scm)
 	{
-		ErrorHandler("OpenSCManagerでエラーが発生", GetLastError());
+		//ErrorHandler("OpenSCManagerでエラーが発生", GetLastError());
+		std::printf("%ld:%s", GetLastError(), "OpenSCManagerでエラーが発生\n");
 		return -1;
 	}
 
@@ -50,7 +51,8 @@ int main(int argc, char* argv[])
 
 	if (!newService)
 	{
-		ErrorHandler("CreateServiceでエラーが発生", GetLastError());
+		//ErrorHandler("CreateServiceでエラーが発生", GetLastError());
+		std::printf("%ld:%s", GetLastError(), "CreateServiceでエラーが発生\n");
 		return -1;
 	}
 
@@ -69,8 +71,9 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////
 void ErrorHandler(const char* s, DWORD err)
 {
-	cout << s << endl;
-	cout << "エラー番号: " << err << endl;
+	//cout << s << endl;
+	//cout << "エラー番号: " << err << endl;
+	std::printf("%ld:%s", err, s);
 	ExitProcess(err);
 }
 #endif

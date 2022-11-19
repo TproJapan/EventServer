@@ -24,21 +24,23 @@ typedef int SOCKET;
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
+    char messageBuf[1024];
+
     ///////////////////////////////////
-    // コマンド引数の解析
+    // Analyze command-line argument
     ///////////////////////////////////
     if (argc != 3) {
         printf("TcpClient IPAddress portNo\n");
         return -1;
     }
 
-    char destination[32];   // 送信先IPアドレス
-    int nPortNo;            // ポート番号
+    char destination[32];   // IP Address
+    int nPortNo;            // Port Number
     strcpy(destination, argv[1]);
     nPortNo = atol(argv[2]);
 
     ///////////////////////////////////
-    //sockaddr_in 構造体の作成
+    //Create sockaddr_in Structure
     ///////////////////////////////////
     struct sockaddr_in dstAddr;
     memset(&dstAddr, 0, sizeof(dstAddr));
@@ -51,31 +53,36 @@ int main(int argc, char* argv[])
     WORD wVersionRequested;
     wVersionRequested = MAKEWORD(2, 0);
     if (WSAStartup(wVersionRequested, &WsaData) != 0) {
-        printf("WSAStartup() error. code=%d\n", WSAGetLastError());
+        //printf("WSAStartup() error. code=%d\n", WSAGetLastError());
+        printf("%ld:%s", WSAGetLastError(), "WSAStartup() error.\n");
         return -1;
     }
 #endif
     ///////////////////////////////////
-    //空のソケットの生成
+    //Create empty socket
     ///////////////////////////////////
     SOCKET dstSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (dstSocket == -1) {
-        printf("ソケットの作成に失敗\n");
+        //printf("Failed to create socket\n");
+        printf("%ld:%s", WSAGetLastError(), "Failed to create socket\n");
         return(-1);
     }
 
     ///////////////////////////////////////////////////////
-    //空のソケットにsockaddr_in構造体をbindしてサーバに接続
+    //Bind sockaddr_in Structure to the empty socket,
+    //Connect server
     ///////////////////////////////////////////////////////
     int nRet;
     nRet = connect(dstSocket,
         (struct sockaddr*)&dstAddr,
         sizeof(dstAddr));
     if (nRet == -1) {
-        printf("%s に接続できませんでした\n", destination);
+        //printf("Fialed to connect to %s\n", destination);
+        sprintf(messageBuf, "Fialed to connect to %s\n", destination);
+        printf("%ld:%s", WSAGetLastError(), messageBuf);
         return(-1);
     }
-    printf("%s に接続しました\n", destination);
+    printf("Succeed to connect to %s\n", destination);
 
     ///////////////////////////////////
     //　サーバとの通信
@@ -98,7 +105,8 @@ int main(int argc, char* argv[])
             strlen(buf) + 1,
             0);
         if (stSize != strlen(buf) + 1) {
-            printf("send error.\n");
+            //printf("send error.\n");
+            printf("%ld:%s", errno, "send error.\n");
             break;
         }
 
@@ -108,8 +116,11 @@ int main(int argc, char* argv[])
             sizeof(buf),
             0);
         if (stSize <= 0) {
-            printf("recv error.　errno = %d\n", errno);//エラーナンバーが0なら異常終了
-            printf("stSize = %d\n", (int)stSize);//stSizeが0ならソケットが切れたと言う事。失敗はだいたいstSizeが-1だとerrnoは4とか
+            //printf("recv error.　errno = %d\n", errno);//エラーナンバーが0なら異常終了
+            //printf("stSize = %d\n", (int)stSize);//stSizeが0ならソケットが切れたと言う事。失敗はだいたいstSizeが-1だとerrnoは4とか
+            sprintf(messageBuf, "recv error.\nstSize = %d\n", (int)stSize);
+            printf("%ld:%s", errno, messageBuf);
+
             break;
         }
         printf("→ %s\n", buf);

@@ -32,6 +32,7 @@ void eraseTail(char *str, int n);
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
+	char messageBuf[BUF];
 	const char* name = "eventserver";
 	const char* protocol = "tcp";
 
@@ -43,18 +44,23 @@ int main(int argc, char* argv[])
 	if (pServent == NULL) 
 	{
 		std::sprintf(portBuff, "%d", port);
-		printf("getservbyname error, uses %s for Port.\n", portBuff);
+		//printf("getservbyname error, uses %s for Port.\n", portBuff);
+		std::sprintf(messageBuf, "getservbyname error, uses %s for Port.\n", portBuff);
+		std::printf("%ld:%s", errno, messageBuf);
 	}else {
 		port = ntohs(pServent->s_port);
 		std::sprintf(portBuff, "%d", port);
-		printf("Uses %s for Port.\n", portBuff);
+		//printf("Uses %s for Port.\n", portBuff);
+		std::sprintf(messageBuf, "Uses %s for Port.\n", portBuff);
+		std::printf("%ld:%s", errno, messageBuf);
 	}
 
 	// 入力パイプの作成
 	unlink(PIPE_START);
 	nRet = mkfifo(PIPE_START, 0666);
 	if ( nRet ==-1 ) {
-		perror("mkfifo\n");
+		//perror("mkfifo\n");
+		printf("%ld:%s", errno, "mkfifo\n");
 		return -1;
 	}
 	
@@ -96,17 +102,22 @@ int main(int argc, char* argv[])
 
     if (pid == -1 ) 
 	{
-        printf("fork has failed in Start.cpp\n");
+        //printf("fork has failed in Start.cpp\n");
+		std::printf("%ld:%s", errno, "fork has failed in Start.cpp\n");
 		return -1;
     }
 	else if (pid == 0) //子プロセスには0が返る
 	{
 		//ToDo:renameat関数使ってリネームできそう
-		printf("tcpServerPath = [%s]\n", tcpServerPath);
+		//printf("tcpServerPath = [%s]\n", tcpServerPath);
+		sprintf(messageBuf, "tcpServerPath = [%s]\n", tcpServerPath);
+		std::printf("%ld:%s", errno, messageBuf);
+
 		nRet = execv(tcpServerPath, str);
         if ( nRet == -1 ) 
 		{
-			printf("execv has failed in Start.cpp. errno=%d\n", errno);
+			//printf("execv has failed in Start.cpp. errno=%d\n", errno);
+			std::printf("%ld:%s", errno, "execv has failed in Start.cpp.\n");
 			return -1;
         }
     }
@@ -124,11 +135,17 @@ int main(int argc, char* argv[])
 
     while (flag == true){
         if((nByte = read(fdStart, buff, sizeof(buff))) > 0){
-            write(fileno(stdout), buff, nByte);
-			printf("\n");
+			//write(fileno(stdout), buff, nByte);
+			//printf("\n");
+			sprintf(messageBuf, "%s\n", buff);
+			std::printf("%s", messageBuf);
+
             flag = false;
         }else if(nByte == -1){
-			perror("write()\n");
+			//perror("write()\n");
+			//printf("%ld:%s", errno, "write()\n");
+			std::printf("%ld:%s", errno, "write()\n");
+
 			closeStartPipe();
 			return -1;
 		}
@@ -139,7 +156,11 @@ int main(int argc, char* argv[])
 }
 
 int closeStartPipe(){
-	if(close(fdStart) != 0) perror("close()\n");
+	if(close(fdStart) != 0) 
+		//perror("close()\n");
+		//printf("%ld:%s", errno, "close()\n");
+		std::printf("%ld:%s", errno, "close()\n");
+
     unlink(PIPE_START);
 	return(0);
 };

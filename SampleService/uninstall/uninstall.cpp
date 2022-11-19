@@ -36,7 +36,8 @@ int main(int argc, char* argv[])
 	scm = OpenSCManager(0, 0, SC_MANAGER_CREATE_SERVICE);
 	if (!scm)
 	{
-		ErrorHandler("OpenSCManagerでエラーが発生", GetLastError());
+		//ErrorHandler("OpenSCManagerでエラーが発生", GetLastError());
+		std::printf("%ld:%s", GetLastError(), "OpenSCManagerでエラーが発生\n");
 		return -1;
 	}
 
@@ -44,14 +45,16 @@ int main(int argc, char* argv[])
 	service = OpenService(scm, SERVICE_NAME, SERVICE_ALL_ACCESS | DELETE);
 	if (!service)
 	{
-		ErrorHandler("OpenServiceでエラーが発生", GetLastError());
+		//ErrorHandler("OpenServiceでエラーが発生", GetLastError());
+		std::printf("%ld:%s", GetLastError(), "OpenServiceでエラーが発生\n");
 	}
 
 	// 必要ならサービスを停止する
 	success = QueryServiceStatus(service, &status);
 	if (!success)
 	{
-		ErrorHandler("QueryServiceStatusでエラーが発生", GetLastError());
+		//ErrorHandler("QueryServiceStatusでエラーが発生", GetLastError());
+		std::printf("%ld:%s", GetLastError(), "QueryServiceStatusでエラーが発生\n");
 	}
 
 	if (status.dwCurrentState != SERVICE_STOPPED)
@@ -61,7 +64,8 @@ int main(int argc, char* argv[])
 		success = ControlService(service, SERVICE_CONTROL_STOP, &status);
 		if (!success)
 		{
-			ErrorHandler("ControlServiceでエラーが発生", GetLastError());
+			//ErrorHandler("ControlServiceでエラーが発生", GetLastError());
+			std::printf("%ld:%s", GetLastError(), "ControlServiceでエラーが発生\n");
 		}
 		Sleep(5000);
 	}
@@ -70,7 +74,8 @@ int main(int argc, char* argv[])
 	success = DeleteService(service);
 	if (!success)
 	{
-		ErrorHandler("DeleteServiceでエラーが発生", GetLastError());
+		//ErrorHandler("DeleteServiceでエラーが発生", GetLastError());
+		std::printf("%ld:%s", GetLastError(), "DeleteServiceでエラーが発生\n");
 	}
 
 	cout << "サービスを削除しました\n";
@@ -88,8 +93,9 @@ int main(int argc, char* argv[])
 ///////////////////////////////////////////////////////////////////////////////
 void ErrorHandler(const char* s, DWORD err)
 {
-	cout << s << endl;
-	cout << "エラー番号: " << err << endl;
+	//cout << s << endl;
+	//cout << "エラー番号: " << err << endl;
+	std::printf("%ld:%s", err, s);
 	ExitProcess(err);
 }
 #endif

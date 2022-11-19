@@ -66,7 +66,8 @@ int main(int argc, char* argv[])
 	// サービスメイン関数をSCMに登録する
 	bRet = registServiceMain();
 	if (!bRet) {
-		writeLog(4, "registServiceMain error. (%ld),%s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "registServiceMain error. (%ld),%s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "registServiceMain error.", __FILENAME__, __LINE__, __func__);
 		return -1;
 	}
 
@@ -91,7 +92,8 @@ bool registServiceMain()
 	BOOL success = StartServiceCtrlDispatcher(serviceTable);
 	if (!success)
 	{
-		writeLog(4, "StartServiceCtrlDispatcher error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "StartServiceCtrlDispatcher error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "StartServiceCtrlDispatcher error.", __FILENAME__, __LINE__, __func__);
 		return false;
 	}
 
@@ -112,7 +114,8 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 		(LPHANDLER_FUNCTION)ServiceCtrlHandler);
 	if (!serviceStatusHandle)
 	{
-		writeLog(4, "RegisterServiceCtrlHandler error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "RegisterServiceCtrlHandler error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "RegisterServiceCtrlHandler error.", __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
@@ -124,7 +127,8 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 1, 5000);
 	if (!success)
 	{
-		writeLog(2, "SendStatusToSCM error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(2, "SendStatusToSCM error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "SendStatusToSCM error.", __FILENAME__, __LINE__, __func__);
 		terminate(GetLastError());
 		return;
 	}
@@ -133,7 +137,8 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	terminateEvent = CreateEvent(0, TRUE, FALSE, 0);
 	if (!terminateEvent)
 	{
-		writeLog(4, "CreateEvent error. %d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "CreateEvent error. %d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "CreateEvent error.", __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
@@ -145,7 +150,8 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 2, 1000);
 	if (!success)
 	{
-		writeLog(4, "SendStatusToSCM(2) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "SendStatusToSCM(2) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "SendStatusToSCM(2) error.", __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
@@ -155,7 +161,8 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	success = SendStatusToSCM(SERVICE_START_PENDING, NO_ERROR, 0, 3, 5000);
 	if (!success)
 	{
-		writeLog(4, "SendStatusToSCM(3) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "SendStatusToSCM(3) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "SendStatusToSCM(3) error.", __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
@@ -165,7 +172,9 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	success = InitService();
 	if (!success)
 	{
-		writeLog(4, "InitService error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "InitService error. %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "InitService error.", __FILENAME__, __LINE__, __func__);
+
 		terminate(GetLastError());
 		return;
 	}
@@ -175,7 +184,8 @@ VOID ServiceMain(DWORD argc, LPSTR* argv)
 	success = SendStatusToSCM(SERVICE_RUNNING, NO_ERROR, 0, 0, 0);
 	if (!success)
 	{
-		writeLog(4, "SendStatusToSCM(4) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "SendStatusToSCM(4) error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "SendStatusToSCM(4) error.", __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
@@ -278,7 +288,8 @@ BOOL SendStatusToSCM(DWORD dwCurrentState,
 	success = SetServiceStatus(serviceStatusHandle, &status);
 	if (!success)
 	{
-		writeLog(4, "SetServiceStatus error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "SetServiceStatus error. %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "SetServiceStatus error.", __FILENAME__, __LINE__, __func__);
 
 		StopService();
 	}
@@ -382,7 +393,8 @@ BOOL InitService()
 		0, 0, &id);
 	if (threadHandle == 0)
 	{
-		writeLog(4, "CreateThread error. %d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "CreateThread error. %d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "CreateThread error.", __FILENAME__, __LINE__, __func__);
 		return FALSE;
 	}
 
@@ -410,7 +422,8 @@ VOID StopService()
 	TcpServerMainEnd = CreateEvent(0, TRUE, FALSE, 0);
 	if (!TcpServerMainEnd)
 	{
-		writeLog(4, "CreateEvent error.  %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "CreateEvent error.  %d %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "CreateEvent error.", __FILENAME__, __LINE__, __func__);
 
 		terminate(GetLastError());
 		return;
@@ -446,8 +459,8 @@ VOID StopService()
 	writeLog(2, "strRet = %s. %s %d %s\n", strRet.c_str(), __FILENAME__, __LINE__, __func__);
 
 	if (dwRet == WAIT_FAILED) {
-		writeLog(4, "WaitForSingleObject error.code=%d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
-
+		//writeLog(4, "WaitForSingleObject error.code=%d. %s %d %s\n", GetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", GetLastError(), "WaitForSingleObject error.", __FILENAME__, __LINE__, __func__);
 	}
 #endif
 
@@ -504,7 +517,8 @@ DWORD ServiceThread(LPDWORD param)
 	WORD wVersionRequested;
 	wVersionRequested = MAKEWORD(2, 0);
 	if (WSAStartup(wVersionRequested, &WsaData) != 0) {
-		writeLog(4, "WSAStartup() error. code=%d %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "WSAStartup() error. code=%d %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", WSAGetLastError(), "WSAStartup() error.", __FILENAME__, __LINE__, __func__);
 		return -1;
 	}
 
@@ -513,7 +527,8 @@ DWORD ServiceThread(LPDWORD param)
 	int port = 5000;//Default value
 	if (pServent == NULL) 
 	{
-		writeLog(4, "getservbyname error, uses 5000 for Port %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "getservbyname error, uses 5000 for Port %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", WSAGetLastError(), "getservbyname error.", __FILENAME__, __LINE__, __func__);
 	}else {
 		port = ntohs(pServent->s_port);
 		writeLog(2, "Uses %d for Port. %s %d %s\n", port, __FILENAME__, __LINE__, __func__);
@@ -524,7 +539,8 @@ DWORD ServiceThread(LPDWORD param)
 	}
 	catch (int e) 
 	{
-		writeLog(4, "tcpServer create error. code=%d %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "tcpServer create error. code=%d %s %d %s\n", WSAGetLastError(), __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", WSAGetLastError(), "tcpServer create error.", __FILENAME__, __LINE__, __func__);
 		return -1;
 	}
 
@@ -532,7 +548,8 @@ DWORD ServiceThread(LPDWORD param)
 
 	if (result != 0)
 	{
-		writeLog(4, "Tcpserver() ended with error %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "Tcpserver() ended with error %d! %s %d %s\n", result, __FILENAME__, __LINE__, __func__);
+		writeLog(4, "%ld:%s, %s %d %s\n", WSAGetLastError(), "Tcpserver() ended with error.", __FILENAME__, __LINE__, __func__);
 	}
 
 	delete tcpServer;

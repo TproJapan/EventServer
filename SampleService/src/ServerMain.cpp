@@ -38,7 +38,7 @@ int main(int argc, char* argv[])
 	//BoostLog有効化
 	init(0, LOG_DIR_SERV, LOG_FILENAME_SERV);
 	logging::add_common_attributes();
-	writeLog(4, "main started , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "main started , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	
 	char work[256];
     pid_t s_pid;
@@ -84,7 +84,8 @@ int main(int argc, char* argv[])
 	pid = fork();
     if (pid == -1 ) 
 	{
-		writeLog(4, "Fork has failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "Fork has failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+        writeLog(4, "%ld:%s, %s %d %s\n", errno, "Fork has failed.\n", __FILENAME__, __LINE__, __func__);
 		return -1;
     }
 
@@ -104,14 +105,14 @@ int main(int argc, char* argv[])
     // カレントディレクトリ変更.
     // ルートディレクトリに移動.(デーモンプロセスはルートディレクトリを起点にして作業するから)
     chdir("/");
-	writeLog(4, "after cddir , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "after cddir , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	
     // 親から引き継いだ全てのファイルディスクリプタのクローズ.
     for(int i = 0; i < MAXFD; i++){
         close(i);
     }
 
-	writeLog(4, "before open /dev/null , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "before open /dev/null , %s %d %s\n", __FILENAME__, __LINE__, __func__);
     // stdin,stdout,stderrをdev/nullでオープン.
     // 単にディスクリプタを閉じるだけだとこれらの出力がエラーになるのでdev/nullにリダイレクトする.
     if((fddevnull = open("/dev/null", O_RDWR, 0) != -1)){
@@ -130,14 +131,15 @@ int main(int argc, char* argv[])
     // デーモン化後の処理
     //------------------------------------------------------
 	//初期化
-	writeLog(4, "before setServerStatus , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "before setServerStatus , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	setServerStatus(0);
-	writeLog(4, "after setServerStatus , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "after setServerStatus , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	
 	//Startプロセス通信用の名前つきパイプを書込専用で開き
     if ((fd_start = open(PIPE_START, O_WRONLY)) == -1)
     {
-		writeLog(4, "open PIPE_START failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "open PIPE_START failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+        writeLog(4, "%ld:%s, %s %d %s\n", errno, "open PIPE_START failed.\n", __FILENAME__, __LINE__, __func__);
         return -1;
     }
 
@@ -146,11 +148,12 @@ int main(int argc, char* argv[])
 	sprintf(buff, "pid = %d", getpid());
 	if (write(fd_start, buff, strlen(buff)) != strlen(buff))
 	{
-		writeLog(4, "write PIPE_START failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+		//writeLog(4, "write PIPE_START failed, %s %d %s\n", __FILENAME__, __LINE__, __func__);
+        writeLog(4, "%ld:%s, %s %d %s\n", errno, "write PIPE_START failed.\n", __FILENAME__, __LINE__, __func__);
 		close(fd_start);
 		return -1;
 	}
-	writeLog(4, "after pipe wirite , %s %d %s\n", __FILENAME__, __LINE__, __func__);
+	writeLog(2, "after pipe wirite , %s %d %s\n", __FILENAME__, __LINE__, __func__);
 	
 	//TcpServer作成
 	try{

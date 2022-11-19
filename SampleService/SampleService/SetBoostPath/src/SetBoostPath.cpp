@@ -8,10 +8,13 @@ int main()
     //////////////////////////////////
     // Read Boost_Path.txt
     //////////////////////////////////
+    char messageBuf[BUF];
 
     auto src = fopen(BoostPathTxtPath, "r");
     if (src == NULL) {
-        std::printf("%s not found!\n", BoostPathTxtPath);
+        //std::printf("%s not found!\n", BoostPathTxtPath);
+        sprintf(messageBuf, "%s not found!\n", BoostPathTxtPath);
+        std::printf("%ld:%s", errno, messageBuf);
         std::cin.get();
         return -1;
     }
@@ -66,7 +69,9 @@ int main()
         newFileContent);
     if (result == EXIT_FAILURE) 
     {
-        std::printf("Failed to open %s!\n", vcxprojPath);
+        //std::printf("Failed to open %s!\n", vcxprojPath);
+        sprintf(messageBuf, "Failed to open %s!\n", vcxprojPath);
+        std::printf("%ld:%s", errno, messageBuf);
         std::cin.get();
         return -1;
     }
@@ -78,12 +83,16 @@ int main()
 
     if (result != 0)
     {
-        std::printf("Failed to update %s!\n", vcxprojPath);
+        //std::printf("Failed to update %s!\n", vcxprojPath);
+        sprintf(messageBuf, "Failed to update %s!\n", vcxprojPath);
+        std::printf("%ld:%s", errno, messageBuf);
         std::cin.get();
         return -1;
     }
 
-    std::printf("Success boost path setup!!\n");
+    //std::printf("Success boost path setup!!\n");
+    sprintf(messageBuf, "Success boost path setup!!\n", vcxprojPath);
+    std::printf("%ld:%s", errno, messageBuf);
     std::cin.get();
     exit(EXIT_SUCCESS);
 }

@@ -9,7 +9,8 @@ int changeFile(char* fileName,
     char sourceCh[BUFSIZE] = {};
 
     if ((fp = fopen(fileName, "r")) == NULL) {
-        std::printf("Failed to open rb mode vcproj!\n");
+        //std::printf("Failed to open rb mode vcproj!\n");
+        std::printf("%ld:%s", errno, "Failed to open rb mode vcproj!\n");
         std::cin.get();
         return EXIT_FAILURE;
     }
