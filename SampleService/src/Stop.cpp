@@ -11,7 +11,7 @@ int main(int argc, char *argv[])
 	//引数チェック
 	if ( argc != 2 ) {
 		//perror("Stop Process No\n");
-		std::printf("%ld:%s", errno, "Stop Process No\n");
+		printf("%ld:%s", errno, "Stop Process No\n");
 		return -1;
 	} 
 

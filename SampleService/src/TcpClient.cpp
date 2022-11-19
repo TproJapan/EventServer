@@ -64,7 +64,11 @@ int main(int argc, char* argv[])
     SOCKET dstSocket = socket(AF_INET, SOCK_STREAM, 0);
     if (dstSocket == -1) {
         //printf("Failed to create socket\n");
+#ifdef _WIN64
         printf("%ld:%s", WSAGetLastError(), "Failed to create socket\n");
+#else
+        printf("%ld:%s", errno, "Failed to create socket\n");
+#endif
         return(-1);
     }
 
@@ -79,7 +83,11 @@ int main(int argc, char* argv[])
     if (nRet == -1) {
         //printf("Fialed to connect to %s\n", destination);
         sprintf(messageBuf, "Fialed to connect to %s\n", destination);
+#ifdef _WIN64
         printf("%ld:%s", WSAGetLastError(), messageBuf);
+#else
+        printf("%ld:%s", errno, messageBuf);
+#endif
         return(-1);
     }
     printf("Succeed to connect to %s\n", destination);

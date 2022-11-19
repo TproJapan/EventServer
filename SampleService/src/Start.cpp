@@ -32,10 +32,10 @@ void eraseTail(char *str, int n);
 ///////////////////////////////////////////////////////////////////////////////
 int main(int argc, char* argv[])
 {
-	char messageBuf[BUF];
+	char messageBuf[1024];
 	const char* name = "eventserver";
 	const char* protocol = "tcp";
-
+1
 	struct servent* pServent = NULL;
 	pServent = getservbyname(name, protocol);
 	int port = 5000;//Default value
