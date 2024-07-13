@@ -14,6 +14,7 @@ typedef int SOCKET;
 #ifdef _WIN64
 #pragma warning(disable:4996)
 #include <WinSock2.h>
+#pragma comment(lib, "Ws2_32.lib")
 #endif
 #include <stdlib.h>
 #include <errno.h>
